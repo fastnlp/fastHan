@@ -55,7 +55,7 @@ class Bert_Proj_CRF(nn.Module):
     def __init__(self, embed, tag_vocab, encoding_type='bmes',embedding_dim=768,dropout=0.1):
         super().__init__()
         self.embed = embed
-        self.pjl = ProjectionLayer(embedding_dim,len(tag_vocab),dropout)
+        self.pjl = ProjectionLayer(embedding_dim,len(tag_vocab),dropout=dropout)
         self.fc=nn.Linear(embedding_dim,len(tag_vocab))
         trans = allowed_transitions(tag_vocab, encoding_type=encoding_type, include_start_end=True)
         self.crf = ConditionalRandomField(len(tag_vocab), include_start_end_trans=True, allowed_transitions=trans)
