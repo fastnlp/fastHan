@@ -48,7 +48,6 @@ class ProjectionLayer(nn.Module):
         out=torch.cat((out1,out2),dim=2)
         out=self.dropout(out)
         out=self.fc(out)
-        print(out.size())
         
         return {"pred":out}
 
@@ -65,8 +64,6 @@ class Bert_Proj_CRF(nn.Module):
         mask = words.ne(0)
         words = self.embed(words)
         words = self.pjl(words,corpus)['pred']
-        #words = self.fc(words)
-        #print(torch.mean(words))
         logits = F.log_softmax(words, dim=-1)
         if target is not None:
             loss = self.crf(logits, target, mask)
@@ -76,8 +73,7 @@ class Bert_Proj_CRF(nn.Module):
             return {'pred': paths}
 
     def forward(self, words, target,corpus=None):
-        print('forward',corpus)
         return self._forward(words, target,corpus)
 
     def predict(self, words,corpus=None):
-        return self._forward(words, target=None, corpus=None)
+        return self._forward(words, target=None, corpus=corpus)
