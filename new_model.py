@@ -9,7 +9,7 @@ from torch.nn.parameter import Parameter
 
 
 class ProjectionLayer(nn.Module):
-    def __init__(self, embedding_dim=768, output_dim=4,num_corpus=10,hidden_dim=128):
+    def __init__(self, embedding_dim=768, output_dim=4,num_corpus=10,hidden_dim=128,dropout=0.1):
         super().__init__()
         
         self.embedding_dim=embedding_dim
@@ -21,6 +21,8 @@ class ProjectionLayer(nn.Module):
         self.fc=nn.Linear(hidden_dim*2,output_dim)
         #self.dropout = nn.Dropout(dropout)
         self.reset_parameters()
+        self.dropout = nn.Dropout(p=dropout)
+
     
     def reset_parameters(self):
         init.kaiming_uniform_(self.domain_projection, a=math.sqrt(5))
@@ -44,16 +46,17 @@ class ProjectionLayer(nn.Module):
         out2=F.relu(out2+b)
 
         out=torch.cat((out1,out2),dim=2)
+        out=self.dropout(out)
         out=self.fc(out)
         print(out.size())
         
         return {"pred":out}
 
 class Bert_Proj_CRF(nn.Module):
-    def __init__(self, embed, tag_vocab, encoding_type='bmes',embedding_dim=768):
+    def __init__(self, embed, tag_vocab, encoding_type='bmes',embedding_dim=768,dropout=0.1):
         super().__init__()
         self.embed = embed
-        self.pjl = ProjectionLayer(embedding_dim,len(tag_vocab))
+        self.pjl = ProjectionLayer(embedding_dim,len(tag_vocab),dropout)
         self.fc=nn.Linear(embedding_dim,len(tag_vocab))
         trans = allowed_transitions(tag_vocab, encoding_type=encoding_type, include_start_end=True)
         self.crf = ConditionalRandomField(len(tag_vocab), include_start_end_trans=True, allowed_transitions=trans)
