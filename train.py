@@ -31,11 +31,13 @@ lab_env=torch.cuda.is_available()
 device = [3] if torch.cuda.is_available() else 'cpu'
 
 if True:
-    model = torch.load('bestmodel')
-    optimizer = torch.load('optimizer')
+    model=torch.load('bestmodel')
+    old_optimizer=torch.load('optimizer')
+    optimizer=optim.Adam(model.parameters(),lr=2e-5,weight_decay=0.01)
+    optimizer.load_state_dict(old_optimizer.state_dict())
     tester = Tester(data=databundle.get_dataset('test'),model=model,metrics=SpanFPreRecMetric(tag_vocab=databundle.vocabs[Const.TARGET], encoding_type='bmes'),device=device)
 
-    #tester.test()
+    tester.test()
 else:
     if lab_env:
         embed=torch.load('embed')
