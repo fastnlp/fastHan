@@ -35,7 +35,7 @@ class ProjectionLayer(nn.Module):
         if corpus is None:
             print('error, no corpus input')
 
-        out1=F.relu(self.shared_projection(words))
+        out1=F.tanh(self.shared_projection(words))
         
         
         B=words.size()[0]
@@ -43,7 +43,7 @@ class ProjectionLayer(nn.Module):
         b=torch.index_select(self.bias,0,corpus).unsqueeze(1)
         # A.size: B*emb*out
         out2=words.bmm(A)
-        out2=F.relu(out2+b)
+        out2=F.tanh(out2+b)
 
         out=torch.cat((out1,out2),dim=2)
         out=self.dropout(out)
