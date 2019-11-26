@@ -8,7 +8,7 @@ from fastNLP.embeddings import BertEmbedding
 from fastNLP.io import DataBundle
 from fastNLP.core.optimizer import AdamW
 
-from new_model import Bert_Proj_CRF
+from model import Bert_Proj_CRF
 from fastNLP.core.callback import WarmupCallback
 import os
 

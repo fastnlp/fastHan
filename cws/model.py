@@ -9,31 +9,44 @@ from torch.nn.parameter import Parameter
 
 
 class ProjectionLayer(nn.Module):
-    def __init__(self, embedding_dim=768, output_dim=4,num_corpus=10,hidden_dim=256,dropout=0.1):
+    def __init__(self, embedding_dim=768, output_dim=4,num_corpus=10,hidden_dim=128,dropout=0.1):
         super().__init__()
         
         self.embedding_dim=embedding_dim
         self.output_dim=output_dim
         self.num_corpus=num_corpus
-        self.domain_embedding=nn.Embedding(self.num_corpus,hidden_dim)
-        self.fc1=nn.Linear((hidden_dim+embedding_dim),hidden_dim)
-        self.fc2=nn.Linear(hidden_dim,output_dim)
+        self.domain_projection=Parameter(torch.Tensor(num_corpus,embedding_dim,hidden_dim))
+        self.bias=Parameter(torch.Tensor(num_corpus,hidden_dim))
+        self.shared_projection = nn.Linear(embedding_dim, hidden_dim)
+        self.fc=nn.Linear(hidden_dim*2,output_dim)
+        self.reset_parameters()
         self.dropout = nn.Dropout(p=dropout)
+
+    
+    def reset_parameters(self):
+        init.kaiming_uniform_(self.domain_projection, a=math.sqrt(5))
+        if self.bias is not None:
+            fan_in, _ = init._calculate_fan_in_and_fan_out(self.domain_projection)
+            bound = 1 / math.sqrt(fan_in)
+            init.uniform_(self.bias, -bound, bound)
 
     def forward(self, words, corpus=None):
         if corpus is None:
             print('error, no corpus input')
 
-        out=self.domain_embedding(corpus)
+        out1=F.relu(self.shared_projection(words))
         
-        out=out.unsqueeze(1)
-        length=words.size()[1]
-        out=out.expand(-1,length,-1)
-        out=torch.cat((words,out),dim=2)
-        out=self.fc1(out)
-        out=F.relu(out)
+        
+        B=words.size()[0]
+        A=torch.index_select(self.domain_projection,0,corpus)
+        b=torch.index_select(self.bias,0,corpus).unsqueeze(1)
+
+        out2=words.bmm(A)
+        out2=F.relu(out2+b)
+
+        out=torch.cat((out1,out2),dim=2)
         out=self.dropout(out)
-        out=self.fc2(out)
+        out=self.fc(out)
         
         return {"pred":out}
 
