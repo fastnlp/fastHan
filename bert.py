@@ -12,7 +12,7 @@ from fastNLP.core import logger
 from fastNLP.core.vocabulary import Vocabulary
 from fastNLP.io.file_utils import PRETRAINED_BERT_MODEL_DIR
 from fastNLP.modules.encoder.bert import _WordPieceBertModel, BertTokenizer
-from bert_encoder import BertModel
+from .bert_encoder import BertModel
 
 
 class BertEmbedding(ContextualEmbedding):
@@ -38,7 +38,7 @@ class BertEmbedding(ContextualEmbedding):
     
     def __init__(self, vocab: Vocabulary, model_dir_or_name: str = 'en-base-uncased', layers: str = '-1',
                  pool_method: str = 'first', word_dropout=0, dropout=0, include_cls_sep: bool = False,
-                 pooled_cls=True, requires_grad: bool = True, auto_truncate: bool = False):
+                 pooled_cls=True, requires_grad: bool = True, auto_truncate: bool = False, layer_num=12):
         """
         
         :param ~fastNLP.Vocabulary vocab: 词表
@@ -75,7 +75,7 @@ class BertEmbedding(ContextualEmbedding):
         
         self.model = _WordBertModel(model_dir_or_name=model_dir_or_name, vocab=vocab, layers=layers,
                                     pool_method=pool_method, include_cls_sep=include_cls_sep,
-                                    pooled_cls=pooled_cls, auto_truncate=auto_truncate, min_freq=2)
+                                    pooled_cls=pooled_cls, auto_truncate=auto_truncate, min_freq=2, layer_num=layer_num)
         
         self.requires_grad = requires_grad
         self._embed_size = len(self.model.layers) * self.model.encoder.hidden_size
@@ -219,11 +219,11 @@ class BertWordPieceEncoder(nn.Module):
 
 class _WordBertModel(nn.Module):
     def __init__(self, model_dir_or_name: str, vocab: Vocabulary, layers: str = '-1', pool_method: str = 'first',
-                 include_cls_sep: bool = False, pooled_cls: bool = False, auto_truncate: bool = False, min_freq=2):
+                 include_cls_sep: bool = False, pooled_cls: bool = False, auto_truncate: bool = False, min_freq=2,layer_num=12):
         super().__init__()
         
         self.tokenzier = BertTokenizer.from_pretrained(model_dir_or_name)
-        self.encoder = BertModel.from_pretrained(model_dir_or_name,layer_num=3)
+        self.encoder = BertModel.from_pretrained(model_dir_or_name,layer_num=layer_num)
         self._max_position_embeddings = self.encoder.config.max_position_embeddings
         #  检查encoder_layer_number是否合理
         encoder_layer_number = len(self.encoder.encoder.layer)
