@@ -10,8 +10,9 @@ fastHan需要以下依赖的包：
 
 torch>=1.0.0
 
-fastNLP>=0.5.0
+fastNLP=0.5.0
 
+**目前发现0.5.5版本的fastNLP会导致import error，请先使用0.5.0版本的fastNLP，在适配0.5.5后会发布新版本的fastHan**
 可执行如下命令完成安装：
 
 ```
