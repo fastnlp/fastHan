@@ -13,12 +13,10 @@ import json
 import math
 import os
 import unicodedata
-import random
 
 import torch
 from torch import nn
 import numpy as np
-
 
 from fastNLP.io.file_utils import _get_embedding_url, cached_path, PRETRAINED_BERT_MODEL_DIR
 from fastNLP.core import logger
@@ -170,6 +168,7 @@ ACT2FN = {"gelu": gelu, "relu": torch.nn.functional.relu, "swish": swish}
 def _get_bert_dir(model_dir_or_name: str = 'en-base-uncased'):
     if model_dir_or_name.lower() in PRETRAINED_BERT_MODEL_DIR:
         model_url = _get_embedding_url('bert', model_dir_or_name.lower())
+        print(model_url)
         model_dir = cached_path(model_url, name='embedding')
         # 检查是否存在
     elif os.path.isdir(os.path.abspath(os.path.expanduser(model_dir_or_name))):
@@ -258,10 +257,9 @@ class BertEmbeddings(nn.Module):
         # self.LayerNorm is not snake-cased to stick with TensorFlow model variable name and be able to load
         # any TensorFlow checkpoint file
         self.LayerNorm = BertLayerNorm(config.hidden_size, eps=config.layer_norm_eps)
-        self.CWS_LayerNorm = BertLayerNorm(config.hidden_size, eps=config.layer_norm_eps)
         self.dropout = nn.Dropout(config.hidden_dropout_prob)
 
-    def forward(self, input_ids,token_type_ids=None):
+    def forward(self, input_ids, token_type_ids=None):
         seq_length = input_ids.size(1)
         position_ids = torch.arange(seq_length, dtype=torch.long, device=input_ids.device)
         position_ids = position_ids.unsqueeze(0).expand_as(input_ids)
@@ -403,57 +401,18 @@ class BertEncoder(nn.Module):
         super(BertEncoder, self).__init__()
         layer = BertLayer(config)
         self.layer = nn.ModuleList([copy.deepcopy(layer) for _ in range(config.num_hidden_layers)])
-        self.use_theseus=False
 
-    def init_theseus(self,replace_p=0.5,use_linear=True,total_step=None):
-        self.scc_n_layer=len(self.layer)//2
-        print(self.scc_n_layer)
-        self.scc_layer=nn.ModuleList([copy.deepcopy(self.layer[ix]) for ix in range(self.scc_n_layer)])
-        self.use_theseus=True
-        self.replace_p=replace_p
-        self.use_linear=use_linear
-        self.step=0
-        self.total_data=total_step
-        if self.use_linear==True and self.total_data is None:
-            raise ValueError(
-                "total step num must be provided if use linear.")
-        if self.use_linear:
-            self.k=(1.0-self.replace_p)/self.total_data
-        for p in self.layer.parameters():
-            p.requires_grad=False
-        for p in self.scc_layer.parameters():
-            p.requires_grad=True
-
-    def theseus_replace(self):
-        randnum=random.random()
-        if self.use_linear==False:
-            return randnum<self.replace_p
-        p=min(1,self.k*self.step+self.replace_p)
-        return randnum<p
-
-    def forward(self, hidden_states, attention_mask, output_all_encoded_layers=True):
-        if not self.use_theseus:
-            layers=self.layer
-        else:
-            if self.training:
-                layers=[]
-                for i in range(self.scc_n_layer):
-                    if self.theseus_replace():
-                        layers.append(self.scc_layer[i])
-                    else:
-                        layers.append(self.layer[i*2])
-                        layers.append(self.layer[i*2+1])
-                self.step+=1
-            else:
-                layers=self.scc_layer
-
-
-        #标记
+    def forward(self, hidden_states, attention_mask, output_all_encoded_layers=True,layers_cut=-1):
         all_encoder_layers = []
-        for layer_module in layers:
+        layer_now=0
+        for layer_module in self.layer:
             hidden_states = layer_module(hidden_states, attention_mask)
             if output_all_encoded_layers:
                 all_encoder_layers.append(hidden_states)
+            layer_now+=1
+            if layers_cut>0 and layer_now>=layers_cut:
+                break
+
         if not output_all_encoded_layers:
             all_encoder_layers.append(hidden_states)
         return all_encoder_layers
@@ -542,7 +501,7 @@ class BertModel(nn.Module):
         if isinstance(module, nn.Linear) and module.bias is not None:
             module.bias.data.zero_()
 
-    def forward(self, input_ids, token_type_ids=None, attention_mask=None, output_all_encoded_layers=True):
+    def forward(self, input_ids, token_type_ids=None, attention_mask=None, output_all_encoded_layers=True, layers_cut=-1):
         if attention_mask is None:
             attention_mask = torch.ones_like(input_ids)
         if token_type_ids is None:
@@ -566,7 +525,8 @@ class BertModel(nn.Module):
         embedding_output = self.embeddings(input_ids, token_type_ids)
         encoded_layers = self.encoder(embedding_output,
                                       extended_attention_mask,
-                                      output_all_encoded_layers=output_all_encoded_layers)
+                                      output_all_encoded_layers=output_all_encoded_layers,
+                                      layers_cut=layers_cut)
         sequence_output = encoded_layers[-1]
         if self.model_type != 'distilbert':
             pooled_output = self.pooler(sequence_output)
@@ -577,14 +537,11 @@ class BertModel(nn.Module):
         return encoded_layers, pooled_output
 
     @classmethod
-    def from_pretrained(cls, model_dir_or_name, layer_num=12, *inputs, **kwargs):
-        if layer_num>12:
-            return None
+    def from_pretrained(cls, model_dir_or_name, *inputs, **kwargs):
         state_dict = kwargs.get('state_dict', None)
         kwargs.pop('state_dict', None)
         kwargs.pop('cache_dir', None)
         kwargs.pop('from_tf', None)
-
 
         # get model dir from name or dir
         pretrained_model_dir = _get_bert_dir(model_dir_or_name)
@@ -592,7 +549,6 @@ class BertModel(nn.Module):
         # Load config
         config_file = _get_file_name_base_on_postfix(pretrained_model_dir, '.json')
         config = BertConfig.from_json_file(config_file)
-
 
         if state_dict is None:
             weights_path = _get_file_name_base_on_postfix(pretrained_model_dir, '.bin')
@@ -632,24 +588,9 @@ class BertModel(nn.Module):
         for old_key, new_key in zip(old_keys, new_keys):
             state_dict[new_key] = state_dict.pop(old_key)
 
-        ## 下段为fastHan处理所需
-        old_keys = []
-        new_keys = []
-        for key in state_dict.keys():
-            new_key = None
-            for key_name in ['embed.model.encoder']:
-                if key_name in key:
-                    new_key = key.replace(key_name, 'bert')
-                    break
-            if new_key:
-                old_keys.append(key)
-                new_keys.append(new_key)
-        for old_key, new_key in zip(old_keys, new_keys):
-            state_dict[new_key] = state_dict.pop(old_key)
-
         # Instantiate model.
-        config.num_hidden_layers=layer_num
         model = cls(config, model_type=model_type, *inputs, **kwargs)
+
         missing_keys = []
         unexpected_keys = []
         error_msgs = []
@@ -671,9 +612,9 @@ class BertModel(nn.Module):
         if len(missing_keys) > 0:
             logger.warning("Weights of {} not initialized from pretrained model: {}".format(
                 model.__class__.__name__, missing_keys))
-        #if len(unexpected_keys) > 0:
-        #    logger.warning("Weights from pretrained model not used in {}: {}".format(
-        #        model.__class__.__name__, unexpected_keys))
+        if len(unexpected_keys) > 0:
+            logger.warning("Weights from pretrained model not used in {}: {}".format(
+                model.__class__.__name__, unexpected_keys))
 
         logger.info(f"Load pre-trained {model_type} parameters from file {weights_path}.")
         return model
@@ -1019,8 +960,7 @@ class BertTokenizer(object):
         """
         model_dir = _get_bert_dir(model_dir_or_name)
         pretrained_model_name_or_path = _get_file_name_base_on_postfix(model_dir, '.txt')
-        if model_dir_or_name.lower() in PRETRAINED_BERT_MODEL_DIR:
-            logger.info("loading vocabulary file {}".format(pretrained_model_name_or_path))
+        logger.info("loading vocabulary file {}".format(pretrained_model_name_or_path))
         max_len = 512
         kwargs['max_len'] = min(kwargs.get('max_position_embeddings', int(1e12)), max_len)
         # Instantiate tokenizer.
