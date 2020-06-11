@@ -35,7 +35,7 @@ model=FastHan()
 model=FastHan(model_type="large")
 ```
 #### 输入句子
-模型对句子进行依存分析的简单例子如下：
+模型对句子进行依存分析、命名实体识别的简单例子如下：
 
 ```
 sentence="郭靖是金庸笔下的一名男主。"
@@ -56,7 +56,7 @@ target参数可在'Parsing'、'CWS'、'POS'、'NER'四个选项中取值，模�
 
 如果分别运行CWS、POS、Parsing任务，模型输出的分词结果等可能存在冲突。如果想获得不冲突的各类信息，请直接运行包含全部所需信息的那项任务。
 
-模型的POS、Parsing任务均使用CTB数据集进行训练，使用CTB标签集。NER使用msra标签集。
+模型的POS、Parsing任务均使用CTB标签集。NER使用msra标签集。
 
 **分词风格**
 
@@ -78,7 +78,7 @@ print(model(sentence,'CWS'))
 
 输入模型的可以是单独的字符串，也可是由字符串组成的列表。如果输入的是列表，模型将一次性处理所有输入的字符串，所以请自行控制 batch size。
 
-模型的输出是在fastHan模块中定义的sentence与token类。模型将输出一个由sentence组成的列表，而每个sentence又由token组成。每个token本身代表一个被分好的次，有pos、head、head_label、ner四项属性，代表了该词的词性、依存关系、命名实体识别信息。
+模型的输出是在fastHan模块中定义的sentence与token类。模型将输出一个由sentence组成的列表，而每个sentence又由token组成。每个token本身代表一个被分好的词，有pos、head、head_label、ner四项属性，代表了该词的词性、依存关系、命名实体识别信息。
 
 一则输入输出的例子如下所示：
 
@@ -107,7 +107,7 @@ for i,sentence in enumerate(answer):
 ```
 可在分词风格中选择'as'、'cityu'进行繁体字分词，这两项为繁体语料库。
 
-此外，由于各项任务共享词表、词嵌入，及时不切换模型的分词风格，模型对繁体字、英文字母、数字均具有一定识别能力。
+此外，由于各项任务共享词表、词嵌入，即使不切换模型的分词风格，模型对繁体字、英文字母、数字均具有一定识别能力。
 
 **切换设备**
 
