@@ -64,7 +64,7 @@ class FastHan(object):
         self.char_vocab=torch.load(os.path.join(model_dir,'chars_vocab'))
         self.label_vocab=torch.load(os.path.join(model_dir,'label_vocab'))
         model_path=os.path.join(model_dir,'model.bin')
-        model_state_dict=torch.load(model_path)
+        model_state_dict=torch.load(model_path,map_location='cpu')
 
         #创建新模型
         if model_type=='base':
