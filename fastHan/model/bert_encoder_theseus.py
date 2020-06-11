@@ -618,6 +618,21 @@ class BertModel(nn.Module):
         for old_key, new_key in zip(old_keys, new_keys):
             state_dict[new_key] = state_dict.pop(old_key)
 
+        ## 下段为fastHan处理所需
+        old_keys = []
+        new_keys = []
+        for key in state_dict.keys():
+            new_key = None
+            for key_name in ['embed.model.encoder']:
+                if key_name in key:
+                    new_key = key.replace(key_name, 'bert')
+                    break
+            if new_key:
+                old_keys.append(key)
+                new_keys.append(new_key)
+        for old_key, new_key in zip(old_keys, new_keys):
+            state_dict[new_key] = state_dict.pop(old_key)
+
         # Instantiate model.
         config.num_hidden_layers=layer_num
         model = cls(config, model_type=model_type, *inputs, **kwargs)
@@ -990,7 +1005,8 @@ class BertTokenizer(object):
         """
         model_dir = _get_bert_dir(model_dir_or_name)
         pretrained_model_name_or_path = _get_file_name_base_on_postfix(model_dir, '.txt')
-        logger.info("loading vocabulary file {}".format(pretrained_model_name_or_path))
+        if model_dir_or_name.lower() in PRETRAINED_BERT_MODEL_DIR:
+            logger.info("loading vocabulary file {}".format(pretrained_model_name_or_path))
         max_len = 512
         kwargs['max_len'] = min(kwargs.get('max_position_embeddings', int(1e12)), max_len)
         # Instantiate tokenizer.

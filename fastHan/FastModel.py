@@ -4,7 +4,8 @@ import torch
 from fastNLP import Vocabulary
 from fastNLP.io.file_utils import cached_path
 
-from model.model import CharModel
+from .model.model import CharModel
+from .model.bert import BertEmbedding
 
 
 class Token(object):
@@ -56,15 +57,55 @@ class FastHan(object):
         #to be changed
         """
         self.device='cpu'
-        model_dir=self.get_model(model_type)
-        model_path=os.path.join(model_dir,'model')
-        self.model=torch.load(model_path,map_location=self.device)
-        self.model.eval()
+        #获取模型的目录/下载模型
+        model_dir=self._get_model(model_type)
+
+        #加载所需
         self.char_vocab=torch.load(os.path.join(model_dir,'chars_vocab'))
         self.label_vocab=torch.load(os.path.join(model_dir,'label_vocab'))
-        self.tag_map={'CWS':'[unused4]','POS':'[unused14]','NER':'[unused12]','Parsing':'[unused1]'}
+        model_path=os.path.join(model_dir,'model.bin')
+        model_state_dict=torch.load(model_path)
 
-    def get_model(self,model_type):
+        #创建新模型
+        if model_type=='base':
+            layer_num=4
+        else:
+            layer_num=8
+        embed=BertEmbedding(self.char_vocab,model_dir_or_name=str(model_dir),dropout=0.1,include_cls_sep=False,layer_num=layer_num)
+        self.model=CharModel(embed=embed,label_vocab=self.label_vocab)
+
+        #复制参数
+        self.model.load_state_dict(model_state_dict)
+
+        self.model.to(self.device)
+        self.model.eval()
+        self.tag_map={'CWS':'[unused5]','POS':'[unused14]','NER':'[unused12]','Parsing':'[unused1]'}
+        self.corpus_map={
+        'CWS-as': '[unused2]',
+        'CWS-cityu': '[unused3]',
+        'CWS-cnc': '[unused4]',
+        'CWS-ctb': '[unused5]',
+        'CWS-msr': '[unused6]',
+        'CWS-pku': '[unused7]',
+        'CWS-sxu': '[unused8]',
+        'CWS-udc': '[unused9]',
+        'CWS-wtb': '[unused10]',
+        'CWS-zx': '[unused11]',
+        }
+
+    def set_device(self,device):
+        self.model.to(device)
+        self.device=device
+    
+    def set_cws_style(self,corpus):
+        corpus=corpus.lower()
+        if not isinstance(corpus,str) or corpus not in ['as','cityu','cnc','ctb','msr','pku','sxu','udc','wtb','zx']:
+            raise ValueError("corpus can only be string in ['as','cityu','cnc','ctb','msr',\
+                'pku','sxu','udc','wtb','zx'].")
+        corpus='CWS-'+corpus
+        self.tag_map['CWS']=self.corpus_map[corpus]
+
+    def _get_model(self,model_type):
         if model_type=='base':
             url='http://212.129.155.247/fasthan/fasthan_base.zip'
         elif model_type=='large':
@@ -75,9 +116,7 @@ class FastHan(object):
         model_dir=cached_path(url,name='fasthan')
         return model_dir
     
-    def set_device(self,device):
-        self.model.to(device)
-        self.device=device
+    
         
     def _to_tensor(self,chars,target,seq_len):
         task_class=[target]

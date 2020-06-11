@@ -12,7 +12,6 @@ from fastNLP import GradientClipCallback, LRScheduler
 from fastNLP.core.callback import WarmupCallback
 #from model.multi_warmup import WarmupCallback
 from fastNLP.core.optimizer import AdamW
-from fastNLP.embeddings import BertEmbedding
 from fastNLP.embeddings.static_embedding import StaticEmbedding
 from fastNLP.io import DataBundle
 from torch import nn as nn

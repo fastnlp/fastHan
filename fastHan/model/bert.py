@@ -243,7 +243,8 @@ class _WordBertModel(nn.Module):
         self.auto_truncate = auto_truncate
         
         # 将所有vocab中word的wordpiece计算出来, 需要额外考虑[CLS]和[SEP]
-        logger.info("Start to generate word pieces for word.")
+        if model_dir_or_name.lower() in PRETRAINED_BERT_MODEL_DIR:
+            logger.info("Start to generate word pieces for word.")
         # 第一步统计出需要的word_piece, 然后创建新的embed和word_piece_vocab, 然后填入值
         word_piece_dict = {'[CLS]': 1, '[SEP]': 1}  # 用到的word_piece以及新增的
         found_count = 0
@@ -302,7 +303,8 @@ class _WordBertModel(nn.Module):
         self._sep_index = self.tokenzier.vocab['[SEP]']
         self._word_pad_index = vocab.padding_idx
         self._wordpiece_pad_index = self.tokenzier.vocab['[PAD]']  # 需要用于生成word_piece
-        logger.info("Found(Or segment into word pieces) {} words out of {}.".format(found_count, len(vocab)))
+        if model_dir_or_name.lower() in PRETRAINED_BERT_MODEL_DIR:
+            logger.info("Found(Or segment into word pieces) {} words out of {}.".format(found_count, len(vocab)))
         self.word_to_wordpieces = np.array(word_to_wordpieces)
         self.register_buffer('word_pieces_lengths', torch.LongTensor(word_pieces_lengths))
         logger.debug("Successfully generate word pieces.")

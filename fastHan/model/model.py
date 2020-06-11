@@ -10,11 +10,11 @@ from .BertCharParser import BertCharParser
 
 
 class CharModel(nn.Module):
-    def __init__(self, embed,label_vocab,pos_idx,
-                Parsing_rnn_layers, Parsing_arc_mlp_size,
-                Parsing_label_mlp_size,Parsing_use_greedy_infer=False,
-                encoding_type='bmeso',embedding_dim=768,dropout=0.1,use_pos_embedding=False,
-                use_average=False):
+    def __init__(self, embed,label_vocab,pos_idx=31,
+                Parsing_rnn_layers=3, Parsing_arc_mlp_size=500,
+                Parsing_label_mlp_size=100,Parsing_use_greedy_infer=False,
+                encoding_type='bmeso',embedding_dim=768,dropout=0.1,use_pos_embedding=True,
+                use_average=True):
         super().__init__()
         self.embed = embed
         self.use_pos_embedding=use_pos_embedding
