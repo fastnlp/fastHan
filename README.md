@@ -125,14 +125,24 @@ model.set_device('cpu')
 - NER：MSRA、OntoNotes
 - POS & Parsing：CTB9
 
+注：模型在训练NER OntoNotes时将其标签集转换为与MSRA一致。
+
 最终模型在各项任务中取得的F值如下：
 
 
 任务 | CWS | Parsing | POS | NER MSRA | NER OntoNotes
 ---|---|--- |--- |--- |---
+SOTA模型 | 97.1 | 85.66,81.71 | 93.15 | 95.25 | 79.92
 base模型 | 97.38 | 81.22,76.71 | 95.19 | 94.33 | 82.86
 large模型 | 97.52 | 85.52,81.38 | 95.92 | 95.50 | 83.82
 
-表格中单位为百分数。CWS的成绩是10项任务的平均成绩。Parsing中的两个成绩分别代表Fudep和Fldep。
+表格中单位为百分数。CWS的成绩是10项任务的平均成绩。Parsing中的两个成绩分别代表Fudep和Fldep。SOTA模型的数据来自笔者对网上资料及论文的查阅，如有缺漏请指正，不胜感激。这五项SOTA表现分别来自如下五篇论文：
+
+1. Huang W, Cheng X, Chen K, et al. Toward Fast and Accurate Neural Chinese Word Segmentation with Multi-Criteria Learning.[J]. arXiv: Computation and Language, 2019.
+2. Hang Yan, Xipeng Qiu, and Xuanjing Huang. "A Graph-based Model for Joint Chinese Word Segmentation and Dependency Parsing." Transactions of the Association for Computational Linguistics 8 (2020): 78-92.
+3. Meng Y, Wu W, Wang F, et al. Glyce: Glyph-vectors for Chinese Character Representations[J]. arXiv: Computation and Language, 2019.
+4. Diao S, Bai J, Song Y, et al. ZEN: Pre-training Chinese Text Encoder Enhanced by N-gram Representations[J]. arXiv: Computation and Language, 2019.
+5. Jie Z, Lu W. Dependency-Guided LSTM-CRF for Named Entity Recognition[C]. international joint conference on natural language processing, 2019: 3860-3870.
+
 
 目前此工作准备投稿，如被录用将会把链接附于此处，届时可在论文中得到更多关于模型结构及训练的详细信息。
