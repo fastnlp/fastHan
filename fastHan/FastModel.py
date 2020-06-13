@@ -8,11 +8,19 @@ from .model.model import CharModel
 from .model.bert import BertEmbedding
 
 
+
 class Token(object):
+    """
+    定义Token类。Token是fastHan输出的Sentence的组成单位，每个Token都代表一个被分好的词。
+    它的pos等属性则代表了它的词性、依存分析等信息。如果不包含此信息则为None。
+    """
+
     def __init__(self,word,pos=None,head=None,head_label=None,ner=None):
         self.word=word
         self.pos=pos
+        #head代表依存弧的指向，root为0；原句中的词，序号从1开始。
         self.head=head
+        #head_label代表依存弧的标签。
         self.head_label=head_label
         self.ner=ner
     
@@ -21,6 +29,12 @@ class Token(object):
     
 
 class Sentence(object):
+    """
+    定义Sentence类。FastHan处理句子后会输出由Sentence组成的列表。
+    Sentence由Token组成，可以用索引访问其中的Token。
+    """
+
+
     def __init__(self,answer_list,target):
         self.answer_list=answer_list
         self.tokens=[]
@@ -51,16 +65,24 @@ class Sentence(object):
         return self.tokens[item]
 
 
+
 class FastHan(object):
+    """
+    FastHan类封装了基于BERT的深度学习联合模型CharModel，可处理CWS、POS、NER、dependency parsing四项任务，这\
+    四项任务共享参数。
+    """
+
+
     def __init__(self,model_type='base'):
         """
-        #to be changed
+        初始化FastHan。包括获取模型参数目录，加载所需的词表、标签集，复制参数等。
+        model_type共有base和large两种选择，分别是基于BERT前四层和前八层的模型。
         """
         self.device='cpu'
         #获取模型的目录/下载模型
         model_dir=self._get_model(model_type)
 
-        #加载所需
+        #加载所需词表、标签集、模型参数
         self.char_vocab=torch.load(os.path.join(model_dir,'chars_vocab'))
         self.label_vocab=torch.load(os.path.join(model_dir,'label_vocab'))
         model_path=os.path.join(model_dir,'model.bin')
@@ -79,6 +101,8 @@ class FastHan(object):
 
         self.model.to(self.device)
         self.model.eval()
+
+        #模型使用任务标签来区分任务、语料库，任务标签被映射到BERT词表中的[unused]
         self.tag_map={'CWS':'[unused5]','POS':'[unused14]','NER':'[unused12]','Parsing':'[unused1]'}
         self.corpus_map={
         'CWS-as': '[unused2]',
@@ -94,10 +118,19 @@ class FastHan(object):
         }
 
     def set_device(self,device):
+        """
+        调整模型至device。如'cpu'，'cuda:0'。
+        """
         self.model.to(device)
         self.device=device
     
     def set_cws_style(self,corpus):
+        """
+        分词风格，指的是训练模型中文分词模块的10个语料库，模型可以区分这10个语料库，\
+        设置分词style为S即令模型认为现在正在处理S语料库的分词。所以分词style实际上是\
+        与语料库的覆盖面、分词粒度相关的。
+        corpus可在'as','cityu','cnc','ctb','msr','pku','sxu','udc','wtb','zx'中取值。
+        """
         corpus=corpus.lower()
         if not isinstance(corpus,str) or corpus not in ['as','cityu','cnc','ctb','msr','pku','sxu','udc','wtb','zx']:
             raise ValueError("corpus can only be string in ['as','cityu','cnc','ctb','msr',\
@@ -106,6 +139,9 @@ class FastHan(object):
         self.tag_map['CWS']=self.corpus_map[corpus]
 
     def _get_model(self,model_type):
+        """
+        首先检查本地目录中是否已缓存模型，若没有缓存则下载。
+        """
         if model_type=='base':
             url='http://212.129.155.247/fasthan/fasthan_base.zip'
         elif model_type=='large':
@@ -119,6 +155,10 @@ class FastHan(object):
     
         
     def _to_tensor(self,chars,target,seq_len):
+        """
+        将向量序列、序列长度转换为pytorch中的tensor，从而输入CharModel。
+        将当前任务变为列表，因为CharModel默认此参数为列表。
+        """
         task_class=[target]
         chars=torch.tensor(chars).to(self.device)
         seq_len=torch.tensor(seq_len).to(self.device)
@@ -126,6 +166,10 @@ class FastHan(object):
         
     
     def _to_label(self,res,target):
+        """
+        将一个向量序列转化为标签序列。
+        """
+        #根据当前任务选择标签集。
         if target=='CWS':
             vocab=self.label_vocab['CWS']
         elif target=='POS':
@@ -134,7 +178,7 @@ class FastHan(object):
             vocab=self.label_vocab['NER']
         else:
             vocab=self.label_vocab['Parsing']
-        
+        #进行转换
         ans=[]
         for label in res[1:]:
             ans.append(vocab.to_word(int(label)))
@@ -142,6 +186,10 @@ class FastHan(object):
         
     
     def _get_list(self,chars,tags):
+        """
+        对使用BMES\BMESO标签集及交叉标签集的标签序列，输入原始字符串、标签集，转化为\
+        分好词的Token序列，以及每个Token的属性。
+        """
         result=[]
         word=''
         for i in range(len(tags)):
@@ -167,6 +215,9 @@ class FastHan(object):
         return result
     
     def _parsing(self,head_preds,label_preds,pos_label,chars):
+        """
+        解析模型在依存分析的输出。
+        """
         words=[]
         word=''
         for i in range(len(head_preds)):
@@ -189,11 +240,15 @@ class FastHan(object):
         return res
     
     def __preprocess_sentence(self,sentence,target):
+        """
+        对原始的输入字符串、字符串列表做处理，转换为padding好的向量序列。
+        """
         tag=self.char_vocab.to_index(self.tag_map[target])
         max_len=max(map(len,sentence))
         chars=[]
         seq_len=[]
         for s in sentence:
+            #对输入列表逐句处理
             s=list(s.strip())
             char=[tag]
             for word in s:
@@ -201,10 +256,12 @@ class FastHan(object):
             seq_len.append(len(char))
             char=char+[0]*(max_len-len(s))
             chars.append(char)
+        #将已经数字化的输入序列转化为tensor
         chars,seq_len,task_class=self._to_tensor(chars,target,seq_len)
         return chars,seq_len,task_class
     
     def __call__(self,sentence,target='CWS'):
+        #若输入的是字符串，转为一个元素的list
         if isinstance(sentence,str) and not isinstance(sentence,list):
              sentence=[sentence]
                 
@@ -219,23 +276,38 @@ class FastHan(object):
         if target not in ['CWS','NER','POS','Parsing']:
             raise ValueError("target can only be CWS, POS, NER or Parsing.")
         
+        #对输入字符串列表做处理，转换为padding好的向量序列。
         chars,seq_len,task_class=self.__preprocess_sentence(sentence,target)
         
         if target in ['CWS','POS','NER']:
+            #如果当前任务是CWS、POS、NER，则进行如下处理
+
+            #输入模型
             res=self.model.predict(chars,seq_len,task_class)['pred']
+
+            #将输出的一个batch的标签向量，逐句转换为分好的词以及每个词的属性。
             ans=[]
             for i in range(chars.size()[0]):
                 tags=self._to_label(res[i][:seq_len[i]],target)
                 ans.append(self._get_list(sentence[i],tags))
         else:
-            #parsing
+            #对依存分析进行如下处理
+
+            #输入模型
             res=self.model.predict(chars,seq_len,task_class)
+
+            #逐句进行解析
             ans=[]
             for i in range(chars.size()[0]):
+                #解析结果中的POS信息
                 pos_label=self._to_label(res['pred'][i][:seq_len[i]],'POS')
+                #解析依存分析信息
                 head_preds=res['head_preds'][i][1:seq_len[i]]
                 label_preds=self._to_label(res['label_preds'][i][:seq_len[i]],'Parsing')
+
                 ans.append(self._parsing(head_preds,label_preds,pos_label,sentence[i]))
+        
+        #将结果转化为Sentence组成的列表
         answer=[]
         for ans_ in ans:
             answer.append(Sentence(ans_,target))
