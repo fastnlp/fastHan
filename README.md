@@ -12,11 +12,15 @@ torch>=1.0.0
 
 fastNLP>=0.5.0
 
-**目前发现1.1版本的fastHan与0.5.5版本的fastNLP会导致import error。如果使用1.1版本的fastHan，请使用0.5.0版本的fastNLP。使用1.2版本的fastHan可以兼容两个版本的fastNLP。**
+**版本更新:**
+- 1.1版本的fastHan与0.5.5版本的fastNLP会导致importerror。如果使用1.1版本的fastHan，请使用0.5.0版本的fastNLP。
+- 1.2版本的fastHan修复了fastNLP版本兼容问题。小于等于1.2版本的fastHan在输入句子的首尾包含**空格、换行**符时会产生BUG。如果字符串首尾包含上述字符，请使用strip函数处理输入字符串。
+- 1.3版本的fastHan自动对输入字符串做strip函数处理。
+
 可执行如下命令完成安装：
 
 ```
-pip install fastHan==1.2
+pip install fastHan==1.3
 ```
 
 ## 使用教程
@@ -123,7 +127,8 @@ model.set_device('cpu')
 ```
 ## 模型表现
 
-模型在以下数据集进行测试和训练：
+### 准确率测试
+模型在以下数据集进行训练和准确性测试：
 
 - CWS：AS, CITYU, CNC, CTB, MSR, PKU, SXU, UDC, WTB, ZX
 - NER：MSRA、OntoNotes
@@ -131,14 +136,16 @@ model.set_device('cpu')
 
 注：模型在训练NER OntoNotes时将其标签集转换为与MSRA一致。
 
-最终模型在各项任务中取得的F值如下：
+模型在ctb分词语料库的前800句进行了速度测试，平均每句有45.2个字符。测试环境为私人电脑， Intel Core i5-9400f + NVIDIA GeForce GTX 1660ti。经测试各项任务运行速度大致相同。
+
+最终模型取得的表现如下：
 
 
-任务 | CWS | Parsing | POS | NER MSRA | NER OntoNotes
----|---|--- |--- |--- |---
-SOTA模型 | 97.1 | 85.66,81.71 | 93.15 | 95.25 | 79.92
-base模型 | 97.27 | 81.22,76.71 | 94.88 | 94.33 | 82.86
-large模型 | 97.41 | 85.52,81.38 | 95.66 | 95.50 | 83.82
+任务 | CWS | Parsing | POS | NER MSRA | NER OntoNotes | 速度(句/s),cpu|速度(句/s)，gpu
+---|---|--- |--- |--- |--- |---|---
+SOTA模型 | 97.1 | 85.66,81.71 | 93.15 | 95.25 | 79.92 |——|——
+base模型 | 97.27 | 81.22,76.71 | 94.88 | 94.33 | 82.86 |28.8|72.3
+large模型 | 97.41 | 85.52,81.38 | 95.66 | 95.50 | 83.82|12.5|64.1 
 
 注：模型在句首加入语料库标签来区分输入句子的任务及语料库，最初测试计算F值时将语料库标签也算入在内，导致CWS、POS分值偏高。现在已修复此处错误并更新了表格中的CWS及POS项。评分略有下降（CWS平均下降0.11，POS平均下降0.29），但仍超越SOTA模型。
 

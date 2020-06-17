@@ -249,7 +249,7 @@ class FastHan(object):
         seq_len=[]
         for s in sentence:
             #对输入列表逐句处理
-            s=list(s.strip())
+            s=list(s)
             char=[tag]
             for word in s:
                 char.append(self.char_vocab.to_index(word))
@@ -264,7 +264,7 @@ class FastHan(object):
         #若输入的是字符串，转为一个元素的list
         if isinstance(sentence,str) and not isinstance(sentence,list):
              sentence=[sentence]
-                
+        
         elif isinstance(sentence,list):
             for s in sentence:
                 if not isinstance(s,str):
@@ -272,6 +272,10 @@ class FastHan(object):
         
         else:
             raise ValueError("model can only parse string or list of string.")
+
+        #去掉句子头尾空格
+        for i,s in enumerate(sentence):
+            sentence[i]=s.strip()
         
         if target not in ['CWS','NER','POS','Parsing']:
             raise ValueError("target can only be CWS, POS, NER or Parsing.")
