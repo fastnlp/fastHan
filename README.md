@@ -136,7 +136,7 @@ model.set_device('cpu')
 
 注：模型在训练NER OntoNotes时将其标签集转换为与MSRA一致。
 
-模型在ctb分词语料库的前800句进行了速度测试，平均每句有45.2个字符。测试环境为私人电脑， Intel Core i5-9400f + NVIDIA GeForce GTX 1660ti。经测试各项任务运行速度大致相同。
+模型在ctb分词语料库的前800句进行了速度测试，平均每句有45.2个字符。测试环境为私人电脑， Intel Core i5-9400f + NVIDIA GeForce GTX 1660ti，batch size取16。经测试各项任务运行速度大致相同。
 
 最终模型取得的表现如下：
 
