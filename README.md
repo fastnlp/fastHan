@@ -158,4 +158,4 @@ large模型 | 97.41 | 85.52,81.38 | 95.66 | 95.50 | 83.82|14-28|21-97
 5. Jie Z, Lu W. Dependency-Guided LSTM-CRF for Named Entity Recognition[C]. international joint conference on natural language processing, 2019: 3860-3870.
 
 
-目前此工作准备投稿，如被录用将会把链接附于此处，届时可在论文中得到更多关于模型结构及训练的详细信息。
+关于更多模型结构和训练的内容，可以查看此篇[论文](https://arxiv.org/pdf/2009.08633)。

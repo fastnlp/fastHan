@@ -1,44 +1,32 @@
 import os
-from functools import partial
 
 import torch
 import torch.nn as nn
 import torch.optim as optim
 from fastNLP import (BucketSampler, Const, CrossEntropyLoss, DataSet,
-                     DataSetIter, GradientClipCallback, LRScheduler,
-                     SpanFPreRecMetric, Tester, Trainer, Vocabulary,
+                     DataSetIter, SpanFPreRecMetric, Tester, Trainer, Vocabulary,
                      cache_results,RandomSampler,BucketSampler)
-from fastNLP import GradientClipCallback, LRScheduler
 from fastNLP.core.callback import WarmupCallback
-#from model.multi_warmup import WarmupCallback
 from fastNLP.core.optimizer import AdamW
-from fastNLP.embeddings.static_embedding import StaticEmbedding
-from fastNLP.io import DataBundle
 from torch import nn as nn
-from torch import optim as optim
-from torch.optim.lr_scheduler import StepLR
 
 from model.bert import BertEmbedding
-from model.callbacks import DevCallback
-from model.CharParser import CharParser
 from model.metrics import CWSMetric, SegAppCharParseF1Metric
 from model.model import CharModel
 from model.AveMultiTaskIter import MultiTaskIter
 
-lr = 3e-5   # 0.01~0.001
+lr = 2e-5   # 0.01~0.001
 dropout = 0.1  # 0.3~0.6
 arc_mlp_size = 500   # 200, 300
 rnn_layers = 3  # 2, 3
 label_mlp_size = 100
 
-device = 2 if torch.cuda.is_available() else 'cpu'
-
-batch_size = 16
+batch_size = 32
 update_every = 1
 n_epochs = 5
 
 #prepare data
-if False:
+if True:
     label_vocab=dict()
     chars_vocab=Vocabulary(min_freq=2)
     target_list=['train','test','dev']
@@ -115,9 +103,8 @@ else:
     all_data=torch.load('all_data')
     chars_vocab=torch.load('chars_vocab')
     label_vocab=torch.load('label_vocab')
-    pos_idx=chars_vocab.to_index('[unused14]')
 
-embed=BertEmbedding(chars_vocab,model_dir_or_name='cn-wwm-ext',dropout=0.1,include_cls_sep=False,layer_num=12)
+embed=BertEmbedding(chars_vocab,model_dir_or_name='cn-wwm-ext',dropout=0.1,include_cls_sep=False,layer_num=8)
 
 model=CharModel(embed=embed,
                 label_vocab=label_vocab,
@@ -125,13 +112,12 @@ model=CharModel(embed=embed,
                 Parsing_rnn_layers=rnn_layers,
                 Parsing_arc_mlp_size=arc_mlp_size,
                 Parsing_label_mlp_size=label_mlp_size,
-                use_average=True,
-                use_pos_embedding=True,
                 encoding_type='bmeso')
 
 
-optimizer = AdamW(model.parameters(), lr=lr)
+optimizer = AdamW(model.parameters(), lr=2e-5)
 
+device = 0 if torch.cuda.is_available() else 'cpu'
 callbacks = [WarmupCallback(warmup=0.1, schedule='linear') ]
 
 metric1 = SegAppCharParseF1Metric(label_vocab['Parsing']['APP'])
@@ -151,13 +137,16 @@ for target in ['train','test','dev']:
     all_data[target]['CWS-all']=CWS_dataset
 
 
+train_data=dict()
+train_data['POS-ctb9']=all_data['train']['POS-ctb9']
+train_data['CWS-all']=all_data['train']['CWS-all']
 train_data=MultiTaskIter(all_data['train'],batch_size=batch_size,sampler=BucketSampler(batch_size=batch_size))
 
-
+#del pos
 trainer = Trainer(train_data=train_data, model=model, optimizer=optimizer,
-                  device=device,dev_data=all_data['test']['POS-ctb9'], batch_size=batch_size,
+                  device=device,dev_data=all_data['dev']['POS-ctb9'], batch_size=batch_size,
                   metrics=metric3,loss=None, n_epochs=n_epochs,check_code_level=-1,
                   update_every=update_every, test_use_tqdm=True,callbacks=callbacks)
 
 trainer.train()
-torch.save(model,'best_model_12')
+torch.save(model,'best_model')
