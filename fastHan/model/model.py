@@ -21,6 +21,7 @@ class CharModel(nn.Module):
         self.use_average=use_average
         self.label_vocab=label_vocab
         self.pos_idx=pos_idx
+        self.user_dict_weight=0.05
         embedding_dim_1=512
         embedding_dim_2=256
         
@@ -56,7 +57,7 @@ class CharModel(nn.Module):
         self.pos_mlp=MLP([embedding_dim, embedding_dim_1,embedding_dim_2, len(label_vocab['POS'])], 'relu', output_activation=None)
         trans=allowed_transitions(label_vocab['POS'],include_start_end=True)
         self.pos_crf = ConditionalRandomField(len(label_vocab['POS']), include_start_end_trans=True, allowed_transitions=trans)
-    
+
     def _generate_embedding(self,feats,word_lens,seq_len,pos):
         device=feats.device
         new_feats=[]
@@ -207,7 +208,7 @@ class CharModel(nn.Module):
 
 
 
-    def predict(self, chars,seq_len,task_class):
+    def predict(self, chars,seq_len,task_class,tag_seqs=None):
         task=task_class[0]
         mask = chars.ne(0)
         layers=self.layers_map[task]
@@ -234,6 +235,12 @@ class CharModel(nn.Module):
 
         if task=='CWS':
             feats=self.cws_mlp(feats)
+            if tag_seqs is not None:
+                diff=torch.max(feats,dim=2)[0]-torch.mean(feats,dim=2)
+                diff=diff.unsqueeze(dim=-1)
+                diff=diff.expand(-1,-1,len(self.label_vocab['CWS']))
+                diff=tag_seqs*diff*self.user_dict_weight
+                feats=feats+diff
             logits = F.log_softmax(feats, dim=-1)
             paths, _ = self.cws_crf.viterbi_decode(logits, mask)
             #paths=feats.max(dim=-1)[1]

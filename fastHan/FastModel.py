@@ -1,4 +1,5 @@
 import os
+import re
 
 import torch
 from fastNLP import Vocabulary
@@ -6,7 +7,7 @@ from fastNLP.io.file_utils import cached_path
 
 from .model.model import CharModel
 from .model.bert import BertEmbedding
-
+from .model.UserDict import UserDict
 
 
 class Token(object):
@@ -26,6 +27,11 @@ class Token(object):
     
     def __repr__(self):
         return self.word
+
+    def __len__(self):
+        return len(self.word)
+
+    
     
 
 class Sentence(object):
@@ -101,6 +107,7 @@ class FastHan(object):
 
         self.model.to(self.device)
         self.model.eval()
+        self.user_dict=UserDict()
 
         #模型使用任务标签来区分任务、语料库，任务标签被映射到BERT词表中的[unused]
         self.tag_map={'CWS':'[unused5]','POS':'[unused14]','NER':'[unused12]','Parsing':'[unused1]'}
@@ -116,6 +123,18 @@ class FastHan(object):
         'CWS-wtb': '[unused10]',
         'CWS-zx': '[unused11]',
         }
+        
+    def add_user_dict(self,dic):
+        if isinstance(dic,str):
+            self.user_dict.load_file(dic)
+        elif isinstance(dic,list):
+            self.user_dict.load_list(dic)
+        else:
+            raise ValueError("model can only parse string or list of string.")
+
+
+    def remove_user_dict(self):
+        self.user_dict = UserDict()
 
     def set_device(self,device):
         """
@@ -214,6 +233,12 @@ class FastHan(object):
         
         return result
     
+    def set_user_dict_weight(self,weight=0.05):
+        assert(isinstance(weight,float) or isinstance(weight,int))
+        self.model.user_dict_weight=weight
+        return 0
+    
+    
     def _parsing(self,head_preds,label_preds,pos_label,chars):
         """
         解析模型在依存分析的输出。
@@ -260,7 +285,7 @@ class FastHan(object):
         chars,seq_len,task_class=self._to_tensor(chars,target,seq_len)
         return chars,seq_len,task_class
     
-    def __call__(self,sentence,target='CWS'):
+    def __call__(self,sentence,target='CWS',use_dict=False):
         #若输入的是字符串，转为一个元素的list
         if isinstance(sentence,str) and not isinstance(sentence,list):
              sentence=[sentence]
@@ -272,6 +297,9 @@ class FastHan(object):
         
         else:
             raise ValueError("model can only parse string or list of string.")
+            
+        if use_dict is True and target!='CWS':
+            raise ValueError("Model can only use dict in CWS mode.")
 
         #去掉句子头尾空格
         for i,s in enumerate(sentence):
@@ -281,13 +309,37 @@ class FastHan(object):
             raise ValueError("target can only be CWS, POS, NER or Parsing.")
         
         #对输入字符串列表做处理，转换为padding好的向量序列。
+        if target=='CWS' and use_dict is True:
+            tag_seqs=[]
+            for s in sentence:
+                _,tag_seq=self.user_dict(s)
+                tag_seq=['S']+tag_seq
+                tag_seqs.append(tag_seq)
+            max_len=max(map(len,tag_seqs))
+            #t_代表tensor形式
+            t_tag_seqs=torch.zeros([len(tag_seqs),max_len,len(self.label_vocab['CWS'].word2idx)])
+            important_tags=['B','M','E','S']
+            for i in range(len(tag_seqs)):
+                for j in range(len(tag_seqs[i])):
+                    if tag_seqs[i][j] in important_tags:
+                        tag=self.label_vocab['CWS'].to_index(tag_seqs[i][j])
+                        t_tag_seqs[i][j][tag]=1
+            t_tag_seqs=t_tag_seqs.to(self.device)
+
+            
+        else:
+            tag_seqs=None
+            t_tag_seqs=None
+                
         chars,seq_len,task_class=self.__preprocess_sentence(sentence,target)
         
         if target in ['CWS','POS','NER']:
             #如果当前任务是CWS、POS、NER，则进行如下处理
 
             #输入模型
-            res=self.model.predict(chars,seq_len,task_class)['pred']
+
+
+            res=self.model.predict(chars,seq_len,task_class,t_tag_seqs)['pred']
 
             #将输出的一个batch的标签向量，逐句转换为分好的词以及每个词的属性。
             ans=[]
@@ -312,6 +364,7 @@ class FastHan(object):
                 ans.append(self._parsing(head_preds,label_preds,pos_label,sentence[i]))
         
         #将结果转化为Sentence组成的列表
+
         answer=[]
         for ans_ in ans:
             answer.append(Sentence(ans_,target))
