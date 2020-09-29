@@ -13,7 +13,9 @@ from .model.UserDict import UserDict
 class Token(object):
     """
     定义Token类。Token是fastHan输出的Sentence的组成单位，每个Token都代表一个被分好的词。
-    它的pos等属性则代表了它的词性、依存分析等信息。如果不包含此信息则为None。
+    它的属性则代表了它的词性、依存分析等信息。如果不包含此信息则为None。
+    其中，word属性代表原词字符串；pos属性代表词性信息；head属性代表依存弧的指向（root为0，原句中的词，序号从1开始）；\
+    head_label属性代表依存弧的标签；ner属性代表该词实体属性
     """
 
     def __init__(self,word,pos=None,head=None,head_label=None,ner=None):
@@ -83,6 +85,8 @@ class FastHan(object):
         """
         初始化FastHan。包括获取模型参数目录，加载所需的词表、标签集，复制参数等。
         model_type共有base和large两种选择，分别是基于BERT前四层和前八层的模型。
+
+        :param str model_type: 取值为'base'或'large'，决定模型的层数为4或8。
         """
         self.device='cpu'
         #获取模型的目录/下载模型
@@ -125,6 +129,13 @@ class FastHan(object):
         }
         
     def add_user_dict(self,dic):
+        '''
+        为分词（CWS）任务添加用户词典。用户词典会在模型解码时根据词典改变标签序列的权重，令模型偏好根据用户词典进行解码。
+
+        :param str,list dic:用户传入的词典，支持以下输入：
+            1.str：词典文件的路径，词典文件中，每个词通过空格分隔。
+            2.list：词典列表，列表中每个元素都是str形式的词。
+        '''
         if isinstance(dic,str):
             self.user_dict.load_file(dic)
         elif isinstance(dic,list):
@@ -134,11 +145,23 @@ class FastHan(object):
 
 
     def remove_user_dict(self):
+        '''
+        移除当前的用户词典。
+        '''
         self.user_dict = UserDict()
 
     def set_device(self,device):
         """
-        调整模型至device。如'cpu'，'cuda:0'。
+        调整模型至device。
+
+        :param str,torch.device,int device:支持以下的输入:
+    
+            1. str: ['cpu', 'cuda', 'cuda:0', 'cuda:1', ...] 依次为'cpu'中, 可见的第一个GPU中, 可见的第一个GPU中,
+            可见的第二个GPU中;
+    
+            2. torch.device：将模型装载到torch.device上。
+    
+            3. int: 使用device_id为该值的gpu。
         """
         self.model.to(device)
         self.device=device
@@ -148,7 +171,8 @@ class FastHan(object):
         分词风格，指的是训练模型中文分词模块的10个语料库，模型可以区分这10个语料库，\
         设置分词style为S即令模型认为现在正在处理S语料库的分词。所以分词style实际上是\
         与语料库的覆盖面、分词粒度相关的。
-        corpus可在'as','cityu','cnc','ctb','msr','pku','sxu','udc','wtb','zx'中取值。
+
+        :param str corpus:语料库可选的取值为'as','cityu','cnc','ctb','msr','pku','sxu','udc','wtb','zx'。默认值为'ctb'。
         """
         corpus=corpus.lower()
         if not isinstance(corpus,str) or corpus not in ['as','cityu','cnc','ctb','msr','pku','sxu','udc','wtb','zx']:
@@ -158,9 +182,9 @@ class FastHan(object):
         self.tag_map['CWS']=self.corpus_map[corpus]
 
     def _get_model(self,model_type):
-        """
-        首先检查本地目录中是否已缓存模型，若没有缓存则下载。
-        """
+        
+        #首先检查本地目录中是否已缓存模型，若没有缓存则下载。
+
         if model_type=='base':
             url='http://212.129.155.247/fasthan/fasthan_base.zip'
         elif model_type=='large':
@@ -174,10 +198,10 @@ class FastHan(object):
     
         
     def _to_tensor(self,chars,target,seq_len):
-        """
-        将向量序列、序列长度转换为pytorch中的tensor，从而输入CharModel。
-        将当前任务变为列表，因为CharModel默认此参数为列表。
-        """
+
+        # 将向量序列、序列长度转换为pytorch中的tensor，从而输入CharModel。
+        # 将当前任务变为列表，因为CharModel默认此参数为列表。
+
         task_class=[target]
         chars=torch.tensor(chars).to(self.device)
         seq_len=torch.tensor(seq_len).to(self.device)
@@ -185,10 +209,11 @@ class FastHan(object):
         
     
     def _to_label(self,res,target):
-        """
-        将一个向量序列转化为标签序列。
-        """
-        #根据当前任务选择标签集。
+
+        # 将一个向量序列转化为标签序列。
+
+        # 根据当前任务选择标签集。
+
         if target=='CWS':
             vocab=self.label_vocab['CWS']
         elif target=='POS':
@@ -205,10 +230,10 @@ class FastHan(object):
         
     
     def _get_list(self,chars,tags):
-        """
-        对使用BMES\BMESO标签集及交叉标签集的标签序列，输入原始字符串、标签集，转化为\
-        分好词的Token序列，以及每个Token的属性。
-        """
+
+        # 对使用BMES\BMESO标签集及交叉标签集的标签序列，输入原始字符串、标签集，转化为\
+        # 分好词的Token序列，以及每个Token的属性。
+
         result=[]
         word=''
         for i in range(len(tags)):
@@ -234,15 +259,21 @@ class FastHan(object):
         return result
     
     def set_user_dict_weight(self,weight=0.05):
+        '''
+        设置词典分词结果对最终结果的影响程度。
+
+        :param float weight:影响程度的权重，数值越大，分词结果越偏向于词典分词法。一般设为0.05-0.1即可有不错的结果。用户也可以自己构建dev set、test set来确定最适合自身任务的参数。
+        '''
+
         assert(isinstance(weight,float) or isinstance(weight,int))
         self.model.user_dict_weight=weight
         return 0
     
     
     def _parsing(self,head_preds,label_preds,pos_label,chars):
-        """
-        解析模型在依存分析的输出。
-        """
+
+        # 解析模型在依存分析的输出。
+
         words=[]
         word=''
         for i in range(len(head_preds)):
@@ -265,9 +296,9 @@ class FastHan(object):
         return res
     
     def __preprocess_sentence(self,sentence,target):
-        """
-        对原始的输入字符串、字符串列表做处理，转换为padding好的向量序列。
-        """
+
+        # 对原始的输入字符串、字符串列表做处理，转换为padding好的向量序列。
+
         tag=self.char_vocab.to_index(self.tag_map[target])
         max_len=max(map(len,sentence))
         chars=[]
@@ -286,6 +317,16 @@ class FastHan(object):
         return chars,seq_len,task_class
     
     def __call__(self,sentence,target='CWS',use_dict=False):
+        '''
+        用户调用FastHan的接口函数。
+        调用后会反悔Sentence类。
+
+        :param str,list sentence:用于解析的输入，可以是字符串形式的一个句子，也可以是由字符串形式的句子组成的列表。每个句子的长度需要小于等于512。
+
+        :param str target:此次调用所进行的任务，可在'CWS','NER','POS','Parsing'中进行选择。其中'CWS','POS','Parsing'这几项任务的信息属于包含关系，调用更高层的任务可以返回互相兼容的多项任务的结果。
+
+        :param bool use_dict:此次分词是否使用用户词典（如若使用，先调用add_user_dict），只有target为'CWS'时，才可令use_dict为True。
+        '''
         #若输入的是字符串，转为一个元素的list
         if isinstance(sentence,str) and not isinstance(sentence,list):
              sentence=[sentence]
