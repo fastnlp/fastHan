@@ -14,13 +14,14 @@ fastNLP>=0.5.0
 
 **版本更新:**
 - 1.1版本的fastHan与0.5.5版本的fastNLP会导致importerror。如果使用1.1版本的fastHan，请使用0.5.0版本的fastNLP。
-- 1.2版本的fastHan修复了fastNLP版本兼容问题。小于等于1.2版本的fastHan在输入句子的首尾包含**空格、换行**符时会产生BUG。如果字符串首尾包含上述字符，请使用strip函数处理输入字符串。
-- 1.3版本的fastHan自动对输入字符串做strip函数处理。
+- 1.2版本的fastHan修复了fastNLP版本兼容问题。小于等于1.2版本的fastHan在输入句子的首尾包含**空格、换行**符时会产生BUG。如果字符串首尾包含上述字符，请使用 strip 函数处理输入字符串。
+- 1.3版本的fastHan自动对输入字符串做 strip 函数处理。
+- 1.4版本的fastHan加入用户词典功能（仅限于分词任务）
 
 可执行如下命令完成安装：
 
 ```
-pip install fastHan==1.3
+pip install fastHan==1.4
 ```
 
 ## 使用教程
@@ -65,7 +66,7 @@ target参数可在'Parsing'、'CWS'、'POS'、'NER'四个选项中取值，模�
 
 **分词风格**
 
-分词风格，指的是训练模型中文分词模块的10个语料库，模型可以区分这10个语料库，设置分词style为S即令模型认为现在正在处理S语料库的分词。所以分词style实际上是与语料库的覆盖面、分词粒度相关的。如本模型默认的CTB语料库分词粒度较细。如果想切换不同的粒度，可以使用模型的set_cws_style函数，例子如下：
+分词风格，指的是训练模型中文分词模块的10个语料库，模型可以区分这10个语料库，设置分词style为S即令模型认为现在正在处理S语料库的分词。所以分词style实际上是与语料库的覆盖面、分词粒度相关的。如本模型默认的CTB语料库分词粒度较细。如果想切换不同的粒度，可以使用模型的 set_cws_style 函数，例子如下：
 
 >
 ```
@@ -98,7 +99,7 @@ for i,sentence in enumerate(answer):
     for token in sentence:
         print(token,token.pos,token.head,token.head_label)
 ```
-模型将输入如下内容：
+上述代码将输出如下内容：
 
 ```
 0
@@ -119,11 +120,35 @@ for i,sentence in enumerate(answer):
 
 **切换设备**
 
-可使用模型的set_device函数，令模型在cuda上运行或切换回cpu，示例如下：
+可使用模型的 set_device 函数，令模型在cuda上运行或切换回cpu，示例如下：
 
 ```
 model.set_device('cuda:0')
 model.set_device('cpu')
+```
+
+**词典分词**
+
+用户可以使用模型的 add_user_dict 函数添加自定义词典，该词典会影响模型在分词任务中的权重分配。进行分词任务时，首先利用词典进行正向、反向最大匹配法进行分词，并将词典方法的分词结果乘上权重系数融入到深度学习模型的结果中。该函数的参数可以是由词组成的list，也可以是文件路径（文件中的内容是由'\n'分隔开的词）。
+
+用户可使用 set_user_dict_weight 函数设置权重系数（若不设置，默认为0.05）。我们在大规模的训练语料库中发现0.05-0.1即可取得较好的结果。条件允许的情况下，用户也可以自行设置验证集、测试集，找到最适合自己任务的权重系数。
+
+添加完用户词典后，需要在调用模型时令 use_dict 参数为True。再次申明，词典功能目前仅在'CWS'任务中有效。
+
+用户可调用 remove_user_dict 移除之前添加的用户词典。
+
+使用用户词典影响分词的一则例子如下：
+```
+sentence="奥利奥利奥"
+print(model(sentence))
+model.add_user_dict(["奥利","奥利奥"])
+model.set_user_dict_weight(0.05)
+print(model(sentence,use_dict=True))
+```
+输出为：
+```
+[['奥利奥利奥']]
+[['奥利', '奥利奥']]
 ```
 ## 模型表现
 
