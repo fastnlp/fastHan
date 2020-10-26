@@ -1,0 +1,615 @@
+
+
+<!DOCTYPE html>
+<html class="writer-html4" lang="zh-CN" >
+<head>
+  <meta charset="utf-8">
+  
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  
+  <title>fastHan.FastModel &mdash; fastHan 0.5.0 文档</title>
+  
+
+  
+  <link rel="stylesheet" href="../../_static/css/theme.css" type="text/css" />
+  <link rel="stylesheet" href="../../_static/pygments.css" type="text/css" />
+
+  
+  
+  
+  
+
+  
+  <!--[if lt IE 9]>
+    <script src="../../_static/js/html5shiv.min.js"></script>
+  <![endif]-->
+  
+    
+      <script type="text/javascript" id="documentation_options" data-url_root="../../" src="../../_static/documentation_options.js"></script>
+        <script type="text/javascript" src="../../_static/jquery.js"></script>
+        <script type="text/javascript" src="../../_static/underscore.js"></script>
+        <script type="text/javascript" src="../../_static/doctools.js"></script>
+        <script type="text/javascript" src="../../_static/language_data.js"></script>
+        <script type="text/javascript" src="../../_static/translations.js"></script>
+        <script async="async" type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.5/latest.js?config=TeX-AMS-MML_HTMLorMML"></script>
+    
+    <script type="text/javascript" src="../../_static/js/theme.js"></script>
+
+    
+    <link rel="index" title="索引" href="../../genindex.html" />
+    <link rel="search" title="搜索" href="../../search.html" /> 
+</head>
+
+<body class="wy-body-for-nav">
+
+   
+  <div class="wy-grid-for-nav">
+    
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+          
+
+          
+            <a href="../../index.html" class="icon icon-home" alt="Documentation Home"> fastHan
+          
+
+          
+          </a>
+
+          
+            
+            
+              <div class="version">
+                0.5.0
+              </div>
+            
+          
+
+          
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+
+          
+        </div>
+
+        
+        <div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="main navigation">
+          
+            
+            
+              
+            
+            
+              <ul>
+<li class="toctree-l1"><a class="reference internal" href="../../user/example.html"> 语法样例</a></li>
+</ul>
+
+            
+          
+        </div>
+        
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap">
+
+      
+      <nav class="wy-nav-top" aria-label="top navigation">
+        
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../../index.html">fastHan</a>
+        
+      </nav>
+
+
+      <div class="wy-nav-content">
+        
+        <div class="rst-content">
+        
+          
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<div role="navigation" aria-label="breadcrumbs navigation">
+
+  <ul class="wy-breadcrumbs">
+    
+      <li><a href="../../index.html" class="icon icon-home"></a> &raquo;</li>
+        
+          <li><a href="../index.html">模块代码</a> &raquo;</li>
+        
+      <li>fastHan.FastModel</li>
+    
+    
+      <li class="wy-breadcrumbs-aside">
+        
+      </li>
+    
+  </ul>
+
+  
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+            
+  <h1>fastHan.FastModel 源代码</h1><div class="highlight"><pre>
+<span></span><span class="kn">import</span> <span class="nn">os</span>
+<span class="kn">import</span> <span class="nn">re</span>
+
+<span class="kn">import</span> <span class="nn">torch</span>
+<span class="kn">from</span> <span class="nn">fastNLP</span> <span class="k">import</span> <span class="n">Vocabulary</span>
+<span class="kn">from</span> <span class="nn">fastNLP.io.file_utils</span> <span class="k">import</span> <span class="n">cached_path</span>
+
+<span class="kn">from</span> <span class="nn">.model.model</span> <span class="k">import</span> <span class="n">CharModel</span>
+<span class="kn">from</span> <span class="nn">.model.bert</span> <span class="k">import</span> <span class="n">BertEmbedding</span>
+<span class="kn">from</span> <span class="nn">.model.UserDict</span> <span class="k">import</span> <span class="n">UserDict</span>
+
+
+<div class="viewcode-block" id="Token"><a class="viewcode-back" href="../../fastHan.FastModel.html#fastHan.Token">[文档]</a><span class="k">class</span> <span class="nc">Token</span><span class="p">(</span><span class="nb">object</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    定义Token类。Token是fastHan输出的Sentence的组成单位，每个Token都代表一个被分好的词。</span>
+<span class="sd">    它的属性则代表了它的词性、依存分析等信息。如果不包含此信息则为None。</span>
+<span class="sd">    其中，word属性代表原词字符串；pos属性代表词性信息；head属性代表依存弧的指向（root为0，原句中的词，序号从1开始）；\</span>
+<span class="sd">    head_label属性代表依存弧的标签；ner属性代表该词实体属性</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+
+<div class="viewcode-block" id="Token.__init__"><a class="viewcode-back" href="../../fastHan.FastModel.html#fastHan.Token.__init__">[文档]</a>    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span><span class="n">word</span><span class="p">,</span><span class="n">pos</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span><span class="n">head</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span><span class="n">head_label</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span><span class="n">ner</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">word</span><span class="o">=</span><span class="n">word</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">pos</span><span class="o">=</span><span class="n">pos</span>
+        <span class="c1">#head代表依存弧的指向，root为0；原句中的词，序号从1开始。</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">head</span><span class="o">=</span><span class="n">head</span>
+        <span class="c1">#head_label代表依存弧的标签。</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">head_label</span><span class="o">=</span><span class="n">head_label</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">ner</span><span class="o">=</span><span class="n">ner</span></div>
+    
+    <span class="k">def</span> <span class="nf">__repr__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">word</span>
+
+    <span class="k">def</span> <span class="nf">__len__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">return</span> <span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">word</span><span class="p">)</span></div>
+
+    
+    
+
+<div class="viewcode-block" id="Sentence"><a class="viewcode-back" href="../../fastHan.FastModel.html#fastHan.Sentence">[文档]</a><span class="k">class</span> <span class="nc">Sentence</span><span class="p">(</span><span class="nb">object</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    定义Sentence类。FastHan处理句子后会输出由Sentence组成的列表。</span>
+<span class="sd">    Sentence由Token组成，可以用索引访问其中的Token。</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+
+
+<div class="viewcode-block" id="Sentence.__init__"><a class="viewcode-back" href="../../fastHan.FastModel.html#fastHan.Sentence.__init__">[文档]</a>    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span><span class="n">answer_list</span><span class="p">,</span><span class="n">target</span><span class="p">):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">answer_list</span><span class="o">=</span><span class="n">answer_list</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">tokens</span><span class="o">=</span><span class="p">[]</span>
+        <span class="k">if</span> <span class="n">target</span><span class="o">==</span><span class="s1">&#39;CWS&#39;</span><span class="p">:</span>
+            <span class="k">for</span> <span class="n">word</span> <span class="ow">in</span> <span class="n">answer_list</span><span class="p">:</span>
+                <span class="n">token</span><span class="o">=</span><span class="n">Token</span><span class="p">(</span><span class="n">word</span><span class="p">)</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">tokens</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">token</span><span class="p">)</span>
+        <span class="k">elif</span> <span class="n">target</span><span class="o">==</span><span class="s1">&#39;NER&#39;</span><span class="p">:</span>
+            <span class="k">for</span> <span class="n">word</span><span class="p">,</span><span class="n">ner</span> <span class="ow">in</span> <span class="n">answer_list</span><span class="p">:</span>
+                <span class="n">token</span><span class="o">=</span><span class="n">Token</span><span class="p">(</span><span class="n">word</span><span class="o">=</span><span class="n">word</span><span class="p">,</span><span class="n">ner</span><span class="o">=</span><span class="n">ner</span><span class="p">)</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">tokens</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">token</span><span class="p">)</span>
+        <span class="k">elif</span> <span class="n">target</span><span class="o">==</span><span class="s1">&#39;POS&#39;</span><span class="p">:</span>
+            <span class="k">for</span> <span class="n">word</span><span class="p">,</span><span class="n">pos</span> <span class="ow">in</span> <span class="n">answer_list</span><span class="p">:</span>
+                <span class="n">token</span><span class="o">=</span><span class="n">Token</span><span class="p">(</span><span class="n">word</span><span class="o">=</span><span class="n">word</span><span class="p">,</span><span class="n">pos</span><span class="o">=</span><span class="n">pos</span><span class="p">)</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">tokens</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">token</span><span class="p">)</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="k">for</span> <span class="n">word</span><span class="p">,</span><span class="n">head</span><span class="p">,</span><span class="n">head_label</span><span class="p">,</span><span class="n">pos</span> <span class="ow">in</span> <span class="n">answer_list</span><span class="p">:</span>
+                <span class="n">token</span><span class="o">=</span><span class="n">Token</span><span class="p">(</span><span class="n">word</span><span class="o">=</span><span class="n">word</span><span class="p">,</span><span class="n">pos</span><span class="o">=</span><span class="n">pos</span><span class="p">,</span><span class="n">head</span><span class="o">=</span><span class="n">head</span><span class="p">,</span><span class="n">head_label</span><span class="o">=</span><span class="n">head_label</span><span class="p">)</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">tokens</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">token</span><span class="p">)</span></div>
+    
+    <span class="k">def</span> <span class="nf">__repr__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">return</span> <span class="nb">repr</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">answer_list</span><span class="p">)</span>
+    
+    <span class="k">def</span> <span class="nf">__len__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">return</span> <span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">tokens</span><span class="p">)</span>
+    
+    <span class="k">def</span> <span class="nf">__getitem__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span><span class="n">item</span><span class="p">):</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">tokens</span><span class="p">[</span><span class="n">item</span><span class="p">]</span></div>
+
+
+
+<div class="viewcode-block" id="FastHan"><a class="viewcode-back" href="../../fastHan.FastModel.html#fastHan.FastHan">[文档]</a><span class="k">class</span> <span class="nc">FastHan</span><span class="p">(</span><span class="nb">object</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    FastHan类封装了基于BERT的深度学习联合模型CharModel，可处理CWS、POS、NER、dependency parsing四项任务，这\</span>
+<span class="sd">    四项任务共享参数。</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+
+
+<div class="viewcode-block" id="FastHan.__init__"><a class="viewcode-back" href="../../fastHan.FastModel.html#fastHan.FastHan.__init__">[文档]</a>    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span><span class="n">model_type</span><span class="o">=</span><span class="s1">&#39;base&#39;</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        初始化FastHan。包括获取模型参数目录，加载所需的词表、标签集，复制参数等。</span>
+<span class="sd">        model_type共有base和large两种选择，分别是基于BERT前四层和前八层的模型。</span>
+
+<span class="sd">        :param str model_type: 取值为&#39;base&#39;或&#39;large&#39;，决定模型的层数为4或8。</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">device</span><span class="o">=</span><span class="s1">&#39;cpu&#39;</span>
+        <span class="c1">#获取模型的目录/下载模型</span>
+        <span class="n">model_dir</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">_get_model</span><span class="p">(</span><span class="n">model_type</span><span class="p">)</span>
+
+        <span class="c1">#加载所需词表、标签集、模型参数</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">char_vocab</span><span class="o">=</span><span class="n">torch</span><span class="o">.</span><span class="n">load</span><span class="p">(</span><span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">model_dir</span><span class="p">,</span><span class="s1">&#39;chars_vocab&#39;</span><span class="p">))</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">label_vocab</span><span class="o">=</span><span class="n">torch</span><span class="o">.</span><span class="n">load</span><span class="p">(</span><span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">model_dir</span><span class="p">,</span><span class="s1">&#39;label_vocab&#39;</span><span class="p">))</span>
+        <span class="n">model_path</span><span class="o">=</span><span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">model_dir</span><span class="p">,</span><span class="s1">&#39;model.bin&#39;</span><span class="p">)</span>
+        <span class="n">model_state_dict</span><span class="o">=</span><span class="n">torch</span><span class="o">.</span><span class="n">load</span><span class="p">(</span><span class="n">model_path</span><span class="p">,</span><span class="n">map_location</span><span class="o">=</span><span class="s1">&#39;cpu&#39;</span><span class="p">)</span>
+
+        <span class="c1">#创建新模型</span>
+        <span class="k">if</span> <span class="n">model_type</span><span class="o">==</span><span class="s1">&#39;base&#39;</span><span class="p">:</span>
+            <span class="n">layer_num</span><span class="o">=</span><span class="mi">4</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">layer_num</span><span class="o">=</span><span class="mi">8</span>
+        <span class="n">embed</span><span class="o">=</span><span class="n">BertEmbedding</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">char_vocab</span><span class="p">,</span><span class="n">model_dir_or_name</span><span class="o">=</span><span class="nb">str</span><span class="p">(</span><span class="n">model_dir</span><span class="p">),</span><span class="n">dropout</span><span class="o">=</span><span class="mf">0.1</span><span class="p">,</span><span class="n">include_cls_sep</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span><span class="n">layer_num</span><span class="o">=</span><span class="n">layer_num</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">model</span><span class="o">=</span><span class="n">CharModel</span><span class="p">(</span><span class="n">embed</span><span class="o">=</span><span class="n">embed</span><span class="p">,</span><span class="n">label_vocab</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">label_vocab</span><span class="p">)</span>
+
+        <span class="c1">#复制参数</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">model</span><span class="o">.</span><span class="n">load_state_dict</span><span class="p">(</span><span class="n">model_state_dict</span><span class="p">)</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">model</span><span class="o">.</span><span class="n">to</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">device</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">model</span><span class="o">.</span><span class="n">eval</span><span class="p">()</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">user_dict</span><span class="o">=</span><span class="n">UserDict</span><span class="p">()</span>
+
+        <span class="c1">#模型使用任务标签来区分任务、语料库，任务标签被映射到BERT词表中的[unused]</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">tag_map</span><span class="o">=</span><span class="p">{</span><span class="s1">&#39;CWS&#39;</span><span class="p">:</span><span class="s1">&#39;[unused5]&#39;</span><span class="p">,</span><span class="s1">&#39;POS&#39;</span><span class="p">:</span><span class="s1">&#39;[unused14]&#39;</span><span class="p">,</span><span class="s1">&#39;NER&#39;</span><span class="p">:</span><span class="s1">&#39;[unused12]&#39;</span><span class="p">,</span><span class="s1">&#39;Parsing&#39;</span><span class="p">:</span><span class="s1">&#39;[unused1]&#39;</span><span class="p">}</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">corpus_map</span><span class="o">=</span><span class="p">{</span>
+        <span class="s1">&#39;CWS-as&#39;</span><span class="p">:</span> <span class="s1">&#39;[unused2]&#39;</span><span class="p">,</span>
+        <span class="s1">&#39;CWS-cityu&#39;</span><span class="p">:</span> <span class="s1">&#39;[unused3]&#39;</span><span class="p">,</span>
+        <span class="s1">&#39;CWS-cnc&#39;</span><span class="p">:</span> <span class="s1">&#39;[unused4]&#39;</span><span class="p">,</span>
+        <span class="s1">&#39;CWS-ctb&#39;</span><span class="p">:</span> <span class="s1">&#39;[unused5]&#39;</span><span class="p">,</span>
+        <span class="s1">&#39;CWS-msr&#39;</span><span class="p">:</span> <span class="s1">&#39;[unused6]&#39;</span><span class="p">,</span>
+        <span class="s1">&#39;CWS-pku&#39;</span><span class="p">:</span> <span class="s1">&#39;[unused7]&#39;</span><span class="p">,</span>
+        <span class="s1">&#39;CWS-sxu&#39;</span><span class="p">:</span> <span class="s1">&#39;[unused8]&#39;</span><span class="p">,</span>
+        <span class="s1">&#39;CWS-udc&#39;</span><span class="p">:</span> <span class="s1">&#39;[unused9]&#39;</span><span class="p">,</span>
+        <span class="s1">&#39;CWS-wtb&#39;</span><span class="p">:</span> <span class="s1">&#39;[unused10]&#39;</span><span class="p">,</span>
+        <span class="s1">&#39;CWS-zx&#39;</span><span class="p">:</span> <span class="s1">&#39;[unused11]&#39;</span><span class="p">,</span>
+        <span class="p">}</span></div>
+        
+<div class="viewcode-block" id="FastHan.add_user_dict"><a class="viewcode-back" href="../../fastHan.FastModel.html#fastHan.FastHan.add_user_dict">[文档]</a>    <span class="k">def</span> <span class="nf">add_user_dict</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span><span class="n">dic</span><span class="p">):</span>
+        <span class="sd">&#39;&#39;&#39;</span>
+<span class="sd">        为分词（CWS）任务添加用户词典。用户词典会在模型解码时根据词典改变标签序列的权重，令模型偏好根据用户词典进行解码。</span>
+
+<span class="sd">        :param str,list dic:用户传入的词典，支持以下输入：</span>
+<span class="sd">            1.str：词典文件的路径，词典文件中，每个词通过空格分隔。</span>
+<span class="sd">            2.list：词典列表，列表中每个元素都是str形式的词。</span>
+<span class="sd">        &#39;&#39;&#39;</span>
+        <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">dic</span><span class="p">,</span><span class="nb">str</span><span class="p">):</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">user_dict</span><span class="o">.</span><span class="n">load_file</span><span class="p">(</span><span class="n">dic</span><span class="p">)</span>
+        <span class="k">elif</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">dic</span><span class="p">,</span><span class="nb">list</span><span class="p">):</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">user_dict</span><span class="o">.</span><span class="n">load_list</span><span class="p">(</span><span class="n">dic</span><span class="p">)</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">&quot;model can only parse string or list of string.&quot;</span><span class="p">)</span></div>
+
+
+<div class="viewcode-block" id="FastHan.remove_user_dict"><a class="viewcode-back" href="../../fastHan.FastModel.html#fastHan.FastHan.remove_user_dict">[文档]</a>    <span class="k">def</span> <span class="nf">remove_user_dict</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&#39;&#39;&#39;</span>
+<span class="sd">        移除当前的用户词典。</span>
+<span class="sd">        &#39;&#39;&#39;</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">user_dict</span> <span class="o">=</span> <span class="n">UserDict</span><span class="p">()</span></div>
+
+<div class="viewcode-block" id="FastHan.set_device"><a class="viewcode-back" href="../../fastHan.FastModel.html#fastHan.FastHan.set_device">[文档]</a>    <span class="k">def</span> <span class="nf">set_device</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span><span class="n">device</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        调整模型至device。</span>
+
+<span class="sd">        :param str,torch.device,int device:支持以下的输入:</span>
+<span class="sd">    </span>
+<span class="sd">            1. str: [&#39;cpu&#39;, &#39;cuda&#39;, &#39;cuda:0&#39;, &#39;cuda:1&#39;, ...] 依次为&#39;cpu&#39;中, 可见的第一个GPU中, 可见的第一个GPU中,</span>
+<span class="sd">            可见的第二个GPU中;</span>
+<span class="sd">    </span>
+<span class="sd">            2. torch.device：将模型装载到torch.device上。</span>
+<span class="sd">    </span>
+<span class="sd">            3. int: 使用device_id为该值的gpu。</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">model</span><span class="o">.</span><span class="n">to</span><span class="p">(</span><span class="n">device</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">device</span><span class="o">=</span><span class="n">device</span></div>
+    
+<div class="viewcode-block" id="FastHan.set_cws_style"><a class="viewcode-back" href="../../fastHan.FastModel.html#fastHan.FastHan.set_cws_style">[文档]</a>    <span class="k">def</span> <span class="nf">set_cws_style</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span><span class="n">corpus</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        分词风格，指的是训练模型中文分词模块的10个语料库，模型可以区分这10个语料库，\</span>
+<span class="sd">        设置分词style为S即令模型认为现在正在处理S语料库的分词。所以分词style实际上是\</span>
+<span class="sd">        与语料库的覆盖面、分词粒度相关的。</span>
+
+<span class="sd">        :param str corpus:语料库可选的取值为&#39;as&#39;,&#39;cityu&#39;,&#39;cnc&#39;,&#39;ctb&#39;,&#39;msr&#39;,&#39;pku&#39;,&#39;sxu&#39;,&#39;udc&#39;,&#39;wtb&#39;,&#39;zx&#39;。默认值为&#39;ctb&#39;。</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">corpus</span><span class="o">=</span><span class="n">corpus</span><span class="o">.</span><span class="n">lower</span><span class="p">()</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">corpus</span><span class="p">,</span><span class="nb">str</span><span class="p">)</span> <span class="ow">or</span> <span class="n">corpus</span> <span class="ow">not</span> <span class="ow">in</span> <span class="p">[</span><span class="s1">&#39;as&#39;</span><span class="p">,</span><span class="s1">&#39;cityu&#39;</span><span class="p">,</span><span class="s1">&#39;cnc&#39;</span><span class="p">,</span><span class="s1">&#39;ctb&#39;</span><span class="p">,</span><span class="s1">&#39;msr&#39;</span><span class="p">,</span><span class="s1">&#39;pku&#39;</span><span class="p">,</span><span class="s1">&#39;sxu&#39;</span><span class="p">,</span><span class="s1">&#39;udc&#39;</span><span class="p">,</span><span class="s1">&#39;wtb&#39;</span><span class="p">,</span><span class="s1">&#39;zx&#39;</span><span class="p">]:</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">&quot;corpus can only be string in [&#39;as&#39;,&#39;cityu&#39;,&#39;cnc&#39;,&#39;ctb&#39;,&#39;msr&#39;,</span><span class="se">\</span>
+<span class="s2">                &#39;pku&#39;,&#39;sxu&#39;,&#39;udc&#39;,&#39;wtb&#39;,&#39;zx&#39;].&quot;</span><span class="p">)</span>
+        <span class="n">corpus</span><span class="o">=</span><span class="s1">&#39;CWS-&#39;</span><span class="o">+</span><span class="n">corpus</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">tag_map</span><span class="p">[</span><span class="s1">&#39;CWS&#39;</span><span class="p">]</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">corpus_map</span><span class="p">[</span><span class="n">corpus</span><span class="p">]</span></div>
+
+    <span class="k">def</span> <span class="nf">_get_model</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span><span class="n">model_type</span><span class="p">):</span>
+        
+        <span class="c1">#首先检查本地目录中是否已缓存模型，若没有缓存则下载。</span>
+
+        <span class="k">if</span> <span class="n">model_type</span><span class="o">==</span><span class="s1">&#39;base&#39;</span><span class="p">:</span>
+            <span class="n">url</span><span class="o">=</span><span class="s1">&#39;http://212.129.155.247/fasthan/fasthan_base.zip&#39;</span>
+        <span class="k">elif</span> <span class="n">model_type</span><span class="o">==</span><span class="s1">&#39;large&#39;</span><span class="p">:</span>
+            <span class="n">url</span><span class="o">=</span><span class="s1">&#39;http://212.129.155.247/fasthan/fasthan_large.zip&#39;</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">&quot;model_type can only be base or large.&quot;</span><span class="p">)</span>
+        
+        <span class="n">model_dir</span><span class="o">=</span><span class="n">cached_path</span><span class="p">(</span><span class="n">url</span><span class="p">,</span><span class="n">name</span><span class="o">=</span><span class="s1">&#39;fasthan&#39;</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">model_dir</span>
+    
+    
+        
+    <span class="k">def</span> <span class="nf">_to_tensor</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span><span class="n">chars</span><span class="p">,</span><span class="n">target</span><span class="p">,</span><span class="n">seq_len</span><span class="p">):</span>
+
+        <span class="c1"># 将向量序列、序列长度转换为pytorch中的tensor，从而输入CharModel。</span>
+        <span class="c1"># 将当前任务变为列表，因为CharModel默认此参数为列表。</span>
+
+        <span class="n">task_class</span><span class="o">=</span><span class="p">[</span><span class="n">target</span><span class="p">]</span>
+        <span class="n">chars</span><span class="o">=</span><span class="n">torch</span><span class="o">.</span><span class="n">tensor</span><span class="p">(</span><span class="n">chars</span><span class="p">)</span><span class="o">.</span><span class="n">to</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">device</span><span class="p">)</span>
+        <span class="n">seq_len</span><span class="o">=</span><span class="n">torch</span><span class="o">.</span><span class="n">tensor</span><span class="p">(</span><span class="n">seq_len</span><span class="p">)</span><span class="o">.</span><span class="n">to</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">device</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">chars</span><span class="p">,</span><span class="n">seq_len</span><span class="p">,</span><span class="n">task_class</span>
+        
+    
+    <span class="k">def</span> <span class="nf">_to_label</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span><span class="n">res</span><span class="p">,</span><span class="n">target</span><span class="p">):</span>
+
+        <span class="c1"># 将一个向量序列转化为标签序列。</span>
+
+        <span class="c1"># 根据当前任务选择标签集。</span>
+
+        <span class="k">if</span> <span class="n">target</span><span class="o">==</span><span class="s1">&#39;CWS&#39;</span><span class="p">:</span>
+            <span class="n">vocab</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">label_vocab</span><span class="p">[</span><span class="s1">&#39;CWS&#39;</span><span class="p">]</span>
+        <span class="k">elif</span> <span class="n">target</span><span class="o">==</span><span class="s1">&#39;POS&#39;</span><span class="p">:</span>
+            <span class="n">vocab</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">label_vocab</span><span class="p">[</span><span class="s1">&#39;POS&#39;</span><span class="p">]</span>
+        <span class="k">elif</span> <span class="n">target</span><span class="o">==</span><span class="s1">&#39;NER&#39;</span><span class="p">:</span>
+            <span class="n">vocab</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">label_vocab</span><span class="p">[</span><span class="s1">&#39;NER&#39;</span><span class="p">]</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">vocab</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">label_vocab</span><span class="p">[</span><span class="s1">&#39;Parsing&#39;</span><span class="p">]</span>
+        <span class="c1">#进行转换</span>
+        <span class="n">ans</span><span class="o">=</span><span class="p">[]</span>
+        <span class="k">for</span> <span class="n">label</span> <span class="ow">in</span> <span class="n">res</span><span class="p">[</span><span class="mi">1</span><span class="p">:]:</span>
+            <span class="n">ans</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">vocab</span><span class="o">.</span><span class="n">to_word</span><span class="p">(</span><span class="nb">int</span><span class="p">(</span><span class="n">label</span><span class="p">)))</span>
+        <span class="k">return</span> <span class="n">ans</span>
+        
+    
+    <span class="k">def</span> <span class="nf">_get_list</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span><span class="n">chars</span><span class="p">,</span><span class="n">tags</span><span class="p">):</span>
+
+        <span class="c1"># 对使用BMES\BMESO标签集及交叉标签集的标签序列，输入原始字符串、标签集，转化为\</span>
+        <span class="c1"># 分好词的Token序列，以及每个Token的属性。</span>
+
+        <span class="n">result</span><span class="o">=</span><span class="p">[]</span>
+        <span class="n">word</span><span class="o">=</span><span class="s1">&#39;&#39;</span>
+        <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">tags</span><span class="p">)):</span>
+            <span class="n">tag</span><span class="o">=</span><span class="n">tags</span><span class="p">[</span><span class="n">i</span><span class="p">]</span>
+            <span class="n">tag1</span><span class="p">,</span><span class="n">tag2</span><span class="o">=</span><span class="n">tag</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span><span class="n">tag</span><span class="p">[</span><span class="mi">2</span><span class="p">:]</span>
+            <span class="k">if</span> <span class="n">tag1</span><span class="o">==</span><span class="s1">&#39;B&#39;</span><span class="p">:</span>
+                <span class="n">word</span><span class="o">=</span><span class="s1">&#39;&#39;</span>
+                <span class="n">word</span><span class="o">+=</span><span class="n">chars</span><span class="p">[</span><span class="n">i</span><span class="p">]</span>
+            <span class="k">elif</span> <span class="n">tag1</span><span class="o">==</span><span class="s1">&#39;S&#39;</span><span class="p">:</span>
+                <span class="k">if</span> <span class="n">tag2</span><span class="o">==</span><span class="s1">&#39;&#39;</span><span class="p">:</span>
+                    <span class="n">result</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">chars</span><span class="p">[</span><span class="n">i</span><span class="p">])</span>
+                <span class="k">else</span><span class="p">:</span>
+                    <span class="n">result</span><span class="o">.</span><span class="n">append</span><span class="p">((</span><span class="n">chars</span><span class="p">[</span><span class="n">i</span><span class="p">],</span><span class="n">tag2</span><span class="p">))</span>
+            <span class="k">elif</span> <span class="n">tag1</span><span class="o">==</span><span class="s1">&#39;E&#39;</span><span class="p">:</span>
+                <span class="n">word</span><span class="o">+=</span><span class="n">chars</span><span class="p">[</span><span class="n">i</span><span class="p">]</span>
+                <span class="k">if</span> <span class="n">tag2</span><span class="o">==</span><span class="s1">&#39;&#39;</span><span class="p">:</span>
+                    <span class="n">result</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">word</span><span class="p">)</span>
+                <span class="k">else</span><span class="p">:</span>
+                    <span class="n">result</span><span class="o">.</span><span class="n">append</span><span class="p">([</span><span class="n">word</span><span class="p">,</span><span class="n">tag2</span><span class="p">])</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="n">word</span><span class="o">+=</span><span class="n">chars</span><span class="p">[</span><span class="n">i</span><span class="p">]</span>
+        
+        <span class="k">return</span> <span class="n">result</span>
+    
+<div class="viewcode-block" id="FastHan.set_user_dict_weight"><a class="viewcode-back" href="../../fastHan.FastModel.html#fastHan.FastHan.set_user_dict_weight">[文档]</a>    <span class="k">def</span> <span class="nf">set_user_dict_weight</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span><span class="n">weight</span><span class="o">=</span><span class="mf">0.05</span><span class="p">):</span>
+        <span class="sd">&#39;&#39;&#39;</span>
+<span class="sd">        设置词典分词结果对最终结果的影响程度。</span>
+
+<span class="sd">        :param float weight:影响程度的权重，数值越大，分词结果越偏向于词典分词法。一般设为0.05-0.1即可有不错的结果。用户也可以自己构建dev set、test set来确定最适合自身任务的参数。</span>
+<span class="sd">        &#39;&#39;&#39;</span>
+
+        <span class="k">assert</span><span class="p">(</span><span class="nb">isinstance</span><span class="p">(</span><span class="n">weight</span><span class="p">,</span><span class="nb">float</span><span class="p">)</span> <span class="ow">or</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">weight</span><span class="p">,</span><span class="nb">int</span><span class="p">))</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">model</span><span class="o">.</span><span class="n">user_dict_weight</span><span class="o">=</span><span class="n">weight</span>
+        <span class="k">return</span> <span class="mi">0</span></div>
+    
+    
+    <span class="k">def</span> <span class="nf">_parsing</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span><span class="n">head_preds</span><span class="p">,</span><span class="n">label_preds</span><span class="p">,</span><span class="n">pos_label</span><span class="p">,</span><span class="n">chars</span><span class="p">):</span>
+
+        <span class="c1"># 解析模型在依存分析的输出。</span>
+
+        <span class="n">words</span><span class="o">=</span><span class="p">[]</span>
+        <span class="n">word</span><span class="o">=</span><span class="s1">&#39;&#39;</span>
+        <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">head_preds</span><span class="p">)):</span>
+            <span class="k">if</span> <span class="n">label_preds</span><span class="p">[</span><span class="n">i</span><span class="p">]</span><span class="o">==</span><span class="s1">&#39;APP&#39;</span><span class="p">:</span>
+                <span class="n">word</span><span class="o">=</span><span class="n">word</span><span class="o">+</span><span class="n">chars</span><span class="p">[</span><span class="n">i</span><span class="p">]</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="n">word</span><span class="o">=</span><span class="n">word</span><span class="o">+</span><span class="n">chars</span><span class="p">[</span><span class="n">i</span><span class="p">]</span>
+                <span class="n">words</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">word</span><span class="p">)</span>
+                <span class="n">word</span><span class="o">=</span><span class="s1">&#39;&#39;</span>
+        
+        <span class="n">words</span><span class="o">=</span><span class="p">[</span><span class="s1">&#39;root&#39;</span><span class="p">]</span><span class="o">+</span><span class="n">words</span>
+        <span class="n">lengths</span><span class="o">=</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
+        <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span><span class="nb">len</span><span class="p">(</span><span class="n">words</span><span class="p">)):</span>
+            <span class="n">lengths</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">lengths</span><span class="p">[</span><span class="n">i</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span><span class="o">+</span><span class="nb">len</span><span class="p">(</span><span class="n">words</span><span class="p">[</span><span class="n">i</span><span class="p">]))</span>
+        <span class="n">res</span><span class="o">=</span><span class="p">[]</span>
+        <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span><span class="nb">len</span><span class="p">(</span><span class="n">lengths</span><span class="p">)):</span>
+            <span class="n">head</span><span class="o">=</span><span class="nb">int</span><span class="p">(</span><span class="n">head_preds</span><span class="p">[</span><span class="n">lengths</span><span class="p">[</span><span class="n">i</span><span class="p">]</span><span class="o">-</span><span class="mi">1</span><span class="p">])</span>
+            <span class="n">head</span><span class="o">=</span><span class="n">lengths</span><span class="o">.</span><span class="n">index</span><span class="p">(</span><span class="n">head</span><span class="p">)</span>
+            <span class="n">res</span><span class="o">.</span><span class="n">append</span><span class="p">([</span><span class="n">words</span><span class="p">[</span><span class="n">i</span><span class="p">],</span><span class="n">head</span><span class="p">,</span><span class="n">label_preds</span><span class="p">[</span><span class="n">lengths</span><span class="p">[</span><span class="n">i</span><span class="p">]</span><span class="o">-</span><span class="mi">1</span><span class="p">],</span><span class="n">pos_label</span><span class="p">[</span><span class="n">lengths</span><span class="p">[</span><span class="n">i</span><span class="p">]</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="s1">&#39;-&#39;</span><span class="p">)[</span><span class="mi">1</span><span class="p">]])</span>
+        <span class="k">return</span> <span class="n">res</span>
+    
+    <span class="k">def</span> <span class="nf">__preprocess_sentence</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span><span class="n">sentence</span><span class="p">,</span><span class="n">target</span><span class="p">):</span>
+
+        <span class="c1"># 对原始的输入字符串、字符串列表做处理，转换为padding好的向量序列。</span>
+
+        <span class="n">tag</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">char_vocab</span><span class="o">.</span><span class="n">to_index</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">tag_map</span><span class="p">[</span><span class="n">target</span><span class="p">])</span>
+        <span class="n">max_len</span><span class="o">=</span><span class="nb">max</span><span class="p">(</span><span class="nb">map</span><span class="p">(</span><span class="nb">len</span><span class="p">,</span><span class="n">sentence</span><span class="p">))</span>
+        <span class="n">chars</span><span class="o">=</span><span class="p">[]</span>
+        <span class="n">seq_len</span><span class="o">=</span><span class="p">[]</span>
+        <span class="k">for</span> <span class="n">s</span> <span class="ow">in</span> <span class="n">sentence</span><span class="p">:</span>
+            <span class="c1">#对输入列表逐句处理</span>
+            <span class="n">s</span><span class="o">=</span><span class="nb">list</span><span class="p">(</span><span class="n">s</span><span class="p">)</span>
+            <span class="n">char</span><span class="o">=</span><span class="p">[</span><span class="n">tag</span><span class="p">]</span>
+            <span class="k">for</span> <span class="n">word</span> <span class="ow">in</span> <span class="n">s</span><span class="p">:</span>
+                <span class="n">char</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">char_vocab</span><span class="o">.</span><span class="n">to_index</span><span class="p">(</span><span class="n">word</span><span class="p">))</span>
+            <span class="n">seq_len</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">char</span><span class="p">))</span>
+            <span class="n">char</span><span class="o">=</span><span class="n">char</span><span class="o">+</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">*</span><span class="p">(</span><span class="n">max_len</span><span class="o">-</span><span class="nb">len</span><span class="p">(</span><span class="n">s</span><span class="p">))</span>
+            <span class="n">chars</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">char</span><span class="p">)</span>
+        <span class="c1">#将已经数字化的输入序列转化为tensor</span>
+        <span class="n">chars</span><span class="p">,</span><span class="n">seq_len</span><span class="p">,</span><span class="n">task_class</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">_to_tensor</span><span class="p">(</span><span class="n">chars</span><span class="p">,</span><span class="n">target</span><span class="p">,</span><span class="n">seq_len</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">chars</span><span class="p">,</span><span class="n">seq_len</span><span class="p">,</span><span class="n">task_class</span>
+    
+    <span class="k">def</span> <span class="nf">__call__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span><span class="n">sentence</span><span class="p">,</span><span class="n">target</span><span class="o">=</span><span class="s1">&#39;CWS&#39;</span><span class="p">,</span><span class="n">use_dict</span><span class="o">=</span><span class="kc">False</span><span class="p">):</span>
+        <span class="sd">&#39;&#39;&#39;</span>
+<span class="sd">        用户调用FastHan的接口函数。</span>
+<span class="sd">        调用后会反悔Sentence类。</span>
+
+<span class="sd">        :param str,list sentence:用于解析的输入，可以是字符串形式的一个句子，也可以是由字符串形式的句子组成的列表。每个句子的长度需要小于等于512。</span>
+
+<span class="sd">        :param str target:此次调用所进行的任务，可在&#39;CWS&#39;,&#39;NER&#39;,&#39;POS&#39;,&#39;Parsing&#39;中进行选择。其中&#39;CWS&#39;,&#39;POS&#39;,&#39;Parsing&#39;这几项任务的信息属于包含关系，调用更高层的任务可以返回互相兼容的多项任务的结果。</span>
+
+<span class="sd">        :param bool use_dict:此次分词是否使用用户词典（如若使用，先调用add_user_dict），只有target为&#39;CWS&#39;时，才可令use_dict为True。</span>
+<span class="sd">        &#39;&#39;&#39;</span>
+        <span class="c1">#若输入的是字符串，转为一个元素的list</span>
+        <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">sentence</span><span class="p">,</span><span class="nb">str</span><span class="p">)</span> <span class="ow">and</span> <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">sentence</span><span class="p">,</span><span class="nb">list</span><span class="p">):</span>
+             <span class="n">sentence</span><span class="o">=</span><span class="p">[</span><span class="n">sentence</span><span class="p">]</span>
+        
+        <span class="k">elif</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">sentence</span><span class="p">,</span><span class="nb">list</span><span class="p">):</span>
+            <span class="k">for</span> <span class="n">s</span> <span class="ow">in</span> <span class="n">sentence</span><span class="p">:</span>
+                <span class="k">if</span> <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">s</span><span class="p">,</span><span class="nb">str</span><span class="p">):</span>
+                    <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">&quot;model can only parse string or list of string.&quot;</span><span class="p">)</span>
+        
+        <span class="k">else</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">&quot;model can only parse string or list of string.&quot;</span><span class="p">)</span>
+            
+        <span class="k">if</span> <span class="n">use_dict</span> <span class="ow">is</span> <span class="kc">True</span> <span class="ow">and</span> <span class="n">target</span><span class="o">!=</span><span class="s1">&#39;CWS&#39;</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">&quot;Model can only use dict in CWS mode.&quot;</span><span class="p">)</span>
+
+        <span class="c1">#去掉句子头尾空格</span>
+        <span class="k">for</span> <span class="n">i</span><span class="p">,</span><span class="n">s</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">sentence</span><span class="p">):</span>
+            <span class="n">sentence</span><span class="p">[</span><span class="n">i</span><span class="p">]</span><span class="o">=</span><span class="n">s</span><span class="o">.</span><span class="n">strip</span><span class="p">()</span>
+        
+        <span class="k">if</span> <span class="n">target</span> <span class="ow">not</span> <span class="ow">in</span> <span class="p">[</span><span class="s1">&#39;CWS&#39;</span><span class="p">,</span><span class="s1">&#39;NER&#39;</span><span class="p">,</span><span class="s1">&#39;POS&#39;</span><span class="p">,</span><span class="s1">&#39;Parsing&#39;</span><span class="p">]:</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">&quot;target can only be CWS, POS, NER or Parsing.&quot;</span><span class="p">)</span>
+        
+        <span class="c1">#对输入字符串列表做处理，转换为padding好的向量序列。</span>
+        <span class="k">if</span> <span class="n">target</span><span class="o">==</span><span class="s1">&#39;CWS&#39;</span> <span class="ow">and</span> <span class="n">use_dict</span> <span class="ow">is</span> <span class="kc">True</span><span class="p">:</span>
+            <span class="n">tag_seqs</span><span class="o">=</span><span class="p">[]</span>
+            <span class="k">for</span> <span class="n">s</span> <span class="ow">in</span> <span class="n">sentence</span><span class="p">:</span>
+                <span class="n">_</span><span class="p">,</span><span class="n">tag_seq</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">user_dict</span><span class="p">(</span><span class="n">s</span><span class="p">)</span>
+                <span class="n">tag_seq</span><span class="o">=</span><span class="p">[</span><span class="s1">&#39;S&#39;</span><span class="p">]</span><span class="o">+</span><span class="n">tag_seq</span>
+                <span class="n">tag_seqs</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">tag_seq</span><span class="p">)</span>
+            <span class="n">max_len</span><span class="o">=</span><span class="nb">max</span><span class="p">(</span><span class="nb">map</span><span class="p">(</span><span class="nb">len</span><span class="p">,</span><span class="n">tag_seqs</span><span class="p">))</span>
+            <span class="c1">#t_代表tensor形式</span>
+            <span class="n">t_tag_seqs</span><span class="o">=</span><span class="n">torch</span><span class="o">.</span><span class="n">zeros</span><span class="p">([</span><span class="nb">len</span><span class="p">(</span><span class="n">tag_seqs</span><span class="p">),</span><span class="n">max_len</span><span class="p">,</span><span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">label_vocab</span><span class="p">[</span><span class="s1">&#39;CWS&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">word2idx</span><span class="p">)])</span>
+            <span class="n">important_tags</span><span class="o">=</span><span class="p">[</span><span class="s1">&#39;B&#39;</span><span class="p">,</span><span class="s1">&#39;M&#39;</span><span class="p">,</span><span class="s1">&#39;E&#39;</span><span class="p">,</span><span class="s1">&#39;S&#39;</span><span class="p">]</span>
+            <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">tag_seqs</span><span class="p">)):</span>
+                <span class="k">for</span> <span class="n">j</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">tag_seqs</span><span class="p">[</span><span class="n">i</span><span class="p">])):</span>
+                    <span class="k">if</span> <span class="n">tag_seqs</span><span class="p">[</span><span class="n">i</span><span class="p">][</span><span class="n">j</span><span class="p">]</span> <span class="ow">in</span> <span class="n">important_tags</span><span class="p">:</span>
+                        <span class="n">tag</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">label_vocab</span><span class="p">[</span><span class="s1">&#39;CWS&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">to_index</span><span class="p">(</span><span class="n">tag_seqs</span><span class="p">[</span><span class="n">i</span><span class="p">][</span><span class="n">j</span><span class="p">])</span>
+                        <span class="n">t_tag_seqs</span><span class="p">[</span><span class="n">i</span><span class="p">][</span><span class="n">j</span><span class="p">][</span><span class="n">tag</span><span class="p">]</span><span class="o">=</span><span class="mi">1</span>
+            <span class="n">t_tag_seqs</span><span class="o">=</span><span class="n">t_tag_seqs</span><span class="o">.</span><span class="n">to</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">device</span><span class="p">)</span>
+
+            
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">tag_seqs</span><span class="o">=</span><span class="kc">None</span>
+            <span class="n">t_tag_seqs</span><span class="o">=</span><span class="kc">None</span>
+                
+        <span class="n">chars</span><span class="p">,</span><span class="n">seq_len</span><span class="p">,</span><span class="n">task_class</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">__preprocess_sentence</span><span class="p">(</span><span class="n">sentence</span><span class="p">,</span><span class="n">target</span><span class="p">)</span>
+        
+        <span class="k">if</span> <span class="n">target</span> <span class="ow">in</span> <span class="p">[</span><span class="s1">&#39;CWS&#39;</span><span class="p">,</span><span class="s1">&#39;POS&#39;</span><span class="p">,</span><span class="s1">&#39;NER&#39;</span><span class="p">]:</span>
+            <span class="c1">#如果当前任务是CWS、POS、NER，则进行如下处理</span>
+
+            <span class="c1">#输入模型</span>
+
+
+            <span class="n">res</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">model</span><span class="o">.</span><span class="n">predict</span><span class="p">(</span><span class="n">chars</span><span class="p">,</span><span class="n">seq_len</span><span class="p">,</span><span class="n">task_class</span><span class="p">,</span><span class="n">t_tag_seqs</span><span class="p">)[</span><span class="s1">&#39;pred&#39;</span><span class="p">]</span>
+
+            <span class="c1">#将输出的一个batch的标签向量，逐句转换为分好的词以及每个词的属性。</span>
+            <span class="n">ans</span><span class="o">=</span><span class="p">[]</span>
+            <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">chars</span><span class="o">.</span><span class="n">size</span><span class="p">()[</span><span class="mi">0</span><span class="p">]):</span>
+                <span class="n">tags</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">_to_label</span><span class="p">(</span><span class="n">res</span><span class="p">[</span><span class="n">i</span><span class="p">][:</span><span class="n">seq_len</span><span class="p">[</span><span class="n">i</span><span class="p">]],</span><span class="n">target</span><span class="p">)</span>
+                <span class="n">ans</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_get_list</span><span class="p">(</span><span class="n">sentence</span><span class="p">[</span><span class="n">i</span><span class="p">],</span><span class="n">tags</span><span class="p">))</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="c1">#对依存分析进行如下处理</span>
+
+            <span class="c1">#输入模型</span>
+            <span class="n">res</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">model</span><span class="o">.</span><span class="n">predict</span><span class="p">(</span><span class="n">chars</span><span class="p">,</span><span class="n">seq_len</span><span class="p">,</span><span class="n">task_class</span><span class="p">)</span>
+
+            <span class="c1">#逐句进行解析</span>
+            <span class="n">ans</span><span class="o">=</span><span class="p">[]</span>
+            <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">chars</span><span class="o">.</span><span class="n">size</span><span class="p">()[</span><span class="mi">0</span><span class="p">]):</span>
+                <span class="c1">#解析结果中的POS信息</span>
+                <span class="n">pos_label</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">_to_label</span><span class="p">(</span><span class="n">res</span><span class="p">[</span><span class="s1">&#39;pred&#39;</span><span class="p">][</span><span class="n">i</span><span class="p">][:</span><span class="n">seq_len</span><span class="p">[</span><span class="n">i</span><span class="p">]],</span><span class="s1">&#39;POS&#39;</span><span class="p">)</span>
+                <span class="c1">#解析依存分析信息</span>
+                <span class="n">head_preds</span><span class="o">=</span><span class="n">res</span><span class="p">[</span><span class="s1">&#39;head_preds&#39;</span><span class="p">][</span><span class="n">i</span><span class="p">][</span><span class="mi">1</span><span class="p">:</span><span class="n">seq_len</span><span class="p">[</span><span class="n">i</span><span class="p">]]</span>
+                <span class="n">label_preds</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">_to_label</span><span class="p">(</span><span class="n">res</span><span class="p">[</span><span class="s1">&#39;label_preds&#39;</span><span class="p">][</span><span class="n">i</span><span class="p">][:</span><span class="n">seq_len</span><span class="p">[</span><span class="n">i</span><span class="p">]],</span><span class="s1">&#39;Parsing&#39;</span><span class="p">)</span>
+
+                <span class="n">ans</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_parsing</span><span class="p">(</span><span class="n">head_preds</span><span class="p">,</span><span class="n">label_preds</span><span class="p">,</span><span class="n">pos_label</span><span class="p">,</span><span class="n">sentence</span><span class="p">[</span><span class="n">i</span><span class="p">]))</span>
+        
+        <span class="c1">#将结果转化为Sentence组成的列表</span>
+
+        <span class="n">answer</span><span class="o">=</span><span class="p">[]</span>
+        <span class="k">for</span> <span class="n">ans_</span> <span class="ow">in</span> <span class="n">ans</span><span class="p">:</span>
+            <span class="n">answer</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">Sentence</span><span class="p">(</span><span class="n">ans_</span><span class="p">,</span><span class="n">target</span><span class="p">))</span>
+        <span class="k">return</span> <span class="n">answer</span></div>
+</pre></div>
+
+           </div>
+           
+          </div>
+          <footer>
+  
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>
+        
+        &copy; 版权所有 2020, fastHan
+
+    </p>
+  </div>
+    
+    
+    
+    Built with <a href="http://sphinx-doc.org/">Sphinx</a> using a
+    
+    <a href="https://github.com/rtfd/sphinx_rtd_theme">theme</a>
+    
+    provided by <a href="https://readthedocs.org">Read the Docs</a>. 
+
+</footer>
+
+        </div>
+      </div>
+
+    </section>
+
+  </div>
+  
+
+  <script type="text/javascript">
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script>
+
+  
+  
+    
+   
+
+</body>
+</html>

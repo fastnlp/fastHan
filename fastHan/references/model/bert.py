@@ -11,7 +11,7 @@ from fastNLP.embeddings.contextual_embedding import ContextualEmbedding
 from fastNLP.core import logger
 from fastNLP.core.vocabulary import Vocabulary
 from fastNLP.io.file_utils import PRETRAINED_BERT_MODEL_DIR
-from fastNLP.modules.encoder.bert import _WordPieceBertModel, BertTokenizer
+from .old_fastNLP_bert import _WordPieceBertModel, BertTokenizer
 from .bert_encoder import BertModel
 
 

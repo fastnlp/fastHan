@@ -1,0 +1,1313 @@
+
+
+<!DOCTYPE html>
+<html class="writer-html4" lang="zh-CN" >
+<head>
+  <meta charset="utf-8">
+  
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  
+  <title>fastHan.model.bert_encoder_theseus &mdash; fastHan 0.5.0 文档</title>
+  
+
+  
+  <link rel="stylesheet" href="../../../_static/css/theme.css" type="text/css" />
+  <link rel="stylesheet" href="../../../_static/pygments.css" type="text/css" />
+
+  
+  
+  
+  
+
+  
+  <!--[if lt IE 9]>
+    <script src="../../../_static/js/html5shiv.min.js"></script>
+  <![endif]-->
+  
+    
+      <script type="text/javascript" id="documentation_options" data-url_root="../../../" src="../../../_static/documentation_options.js"></script>
+        <script type="text/javascript" src="../../../_static/jquery.js"></script>
+        <script type="text/javascript" src="../../../_static/underscore.js"></script>
+        <script type="text/javascript" src="../../../_static/doctools.js"></script>
+        <script type="text/javascript" src="../../../_static/language_data.js"></script>
+        <script type="text/javascript" src="../../../_static/translations.js"></script>
+        <script async="async" type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.5/latest.js?config=TeX-AMS-MML_HTMLorMML"></script>
+    
+    <script type="text/javascript" src="../../../_static/js/theme.js"></script>
+
+    
+    <link rel="index" title="索引" href="../../../genindex.html" />
+    <link rel="search" title="搜索" href="../../../search.html" /> 
+</head>
+
+<body class="wy-body-for-nav">
+
+   
+  <div class="wy-grid-for-nav">
+    
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+          
+
+          
+            <a href="../../../index.html" class="icon icon-home" alt="Documentation Home"> fastHan
+          
+
+          
+          </a>
+
+          
+            
+            
+              <div class="version">
+                0.5.0
+              </div>
+            
+          
+
+          
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../../../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+
+          
+        </div>
+
+        
+        <div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="main navigation">
+          
+            
+            
+              
+            
+            
+              <ul>
+<li class="toctree-l1"><a class="reference internal" href="../../../user/example.html"> 语法样例</a></li>
+</ul>
+
+            
+          
+        </div>
+        
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap">
+
+      
+      <nav class="wy-nav-top" aria-label="top navigation">
+        
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../../../index.html">fastHan</a>
+        
+      </nav>
+
+
+      <div class="wy-nav-content">
+        
+        <div class="rst-content">
+        
+          
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<div role="navigation" aria-label="breadcrumbs navigation">
+
+  <ul class="wy-breadcrumbs">
+    
+      <li><a href="../../../index.html" class="icon icon-home"></a> &raquo;</li>
+        
+          <li><a href="../../index.html">模块代码</a> &raquo;</li>
+        
+      <li>fastHan.model.bert_encoder_theseus</li>
+    
+    
+      <li class="wy-breadcrumbs-aside">
+        
+      </li>
+    
+  </ul>
+
+  
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+            
+  <h1>fastHan.model.bert_encoder_theseus 源代码</h1><div class="highlight"><pre>
+<span></span><span class="sd">&quot;&quot;&quot;undocumented</span>
+<span class="sd">这个页面的代码很大程度上参考(复制粘贴)了https://github.com/huggingface/pytorch-pretrained-BERT的代码， 如果你发现该代码对你</span>
+<span class="sd">    有用，也请引用一下他们。</span>
+<span class="sd">&quot;&quot;&quot;</span>
+
+<span class="n">__all__</span> <span class="o">=</span> <span class="p">[</span>
+    <span class="s2">&quot;BertModel&quot;</span>
+<span class="p">]</span>
+
+<span class="kn">import</span> <span class="nn">collections</span>
+<span class="kn">import</span> <span class="nn">copy</span>
+<span class="kn">import</span> <span class="nn">json</span>
+<span class="kn">import</span> <span class="nn">math</span>
+<span class="kn">import</span> <span class="nn">os</span>
+<span class="kn">import</span> <span class="nn">unicodedata</span>
+<span class="kn">import</span> <span class="nn">random</span>
+
+<span class="kn">import</span> <span class="nn">torch</span>
+<span class="kn">from</span> <span class="nn">torch</span> <span class="k">import</span> <span class="n">nn</span>
+<span class="kn">import</span> <span class="nn">numpy</span> <span class="k">as</span> <span class="nn">np</span>
+
+
+<span class="kn">from</span> <span class="nn">fastNLP.io.file_utils</span> <span class="k">import</span> <span class="n">_get_embedding_url</span><span class="p">,</span> <span class="n">cached_path</span><span class="p">,</span> <span class="n">PRETRAINED_BERT_MODEL_DIR</span>
+<span class="kn">from</span> <span class="nn">fastNLP.core</span> <span class="k">import</span> <span class="n">logger</span>
+
+<span class="k">def</span> <span class="nf">_get_file_name_base_on_postfix</span><span class="p">(</span><span class="n">dir_path</span><span class="p">,</span> <span class="n">postfix</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    在dir_path中寻找后缀为postfix的文件.</span>
+<span class="sd">    :param dir_path: str, 文件夹</span>
+<span class="sd">    :param postfix: 形如&quot;.bin&quot;, &quot;.json&quot;等</span>
+<span class="sd">    :return: str，文件的路径</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">files</span> <span class="o">=</span> <span class="nb">list</span><span class="p">(</span><span class="nb">filter</span><span class="p">(</span><span class="k">lambda</span> <span class="n">filename</span><span class="p">:</span> <span class="n">filename</span><span class="o">.</span><span class="n">endswith</span><span class="p">(</span><span class="n">postfix</span><span class="p">),</span> <span class="n">os</span><span class="o">.</span><span class="n">listdir</span><span class="p">(</span><span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">dir_path</span><span class="p">))))</span>
+    <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">files</span><span class="p">)</span> <span class="o">==</span> <span class="mi">0</span><span class="p">:</span>
+        <span class="k">raise</span> <span class="ne">FileNotFoundError</span><span class="p">(</span><span class="n">f</span><span class="s2">&quot;There is no file endswith *</span><span class="si">{postfix}</span><span class="s2"> file in </span><span class="si">{dir_path}</span><span class="s2">&quot;</span><span class="p">)</span>
+    <span class="k">elif</span> <span class="nb">len</span><span class="p">(</span><span class="n">files</span><span class="p">)</span> <span class="o">&gt;</span> <span class="mi">1</span><span class="p">:</span>
+        <span class="k">raise</span> <span class="ne">FileExistsError</span><span class="p">(</span><span class="n">f</span><span class="s2">&quot;There are multiple *</span><span class="si">{postfix}</span><span class="s2"> files in </span><span class="si">{dir_path}</span><span class="s2">&quot;</span><span class="p">)</span>
+    <span class="k">return</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">dir_path</span><span class="p">,</span> <span class="n">files</span><span class="p">[</span><span class="mi">0</span><span class="p">])</span>
+
+<span class="n">CONFIG_FILE</span> <span class="o">=</span> <span class="s1">&#39;bert_config.json&#39;</span>
+<span class="n">VOCAB_NAME</span> <span class="o">=</span> <span class="s1">&#39;vocab.txt&#39;</span>
+
+<span class="n">BERT_KEY_RENAME_MAP_1</span> <span class="o">=</span> <span class="p">{</span>
+    <span class="s1">&#39;gamma&#39;</span><span class="p">:</span> <span class="s1">&#39;weight&#39;</span><span class="p">,</span>
+    <span class="s1">&#39;beta&#39;</span><span class="p">:</span> <span class="s1">&#39;bias&#39;</span><span class="p">,</span>
+    <span class="s1">&#39;distilbert.embeddings&#39;</span><span class="p">:</span> <span class="s1">&#39;bert.embeddings&#39;</span><span class="p">,</span>
+    <span class="s1">&#39;distilbert.transformer&#39;</span><span class="p">:</span> <span class="s1">&#39;bert.encoder&#39;</span><span class="p">,</span>
+<span class="p">}</span>
+
+<span class="n">BERT_KEY_RENAME_MAP_2</span> <span class="o">=</span> <span class="p">{</span>
+    <span class="s1">&#39;q_lin&#39;</span><span class="p">:</span> <span class="s1">&#39;self.query&#39;</span><span class="p">,</span>
+    <span class="s1">&#39;k_lin&#39;</span><span class="p">:</span> <span class="s1">&#39;self.key&#39;</span><span class="p">,</span>
+    <span class="s1">&#39;v_lin&#39;</span><span class="p">:</span> <span class="s1">&#39;self.value&#39;</span><span class="p">,</span>
+    <span class="s1">&#39;out_lin&#39;</span><span class="p">:</span> <span class="s1">&#39;output.dense&#39;</span><span class="p">,</span>
+    <span class="s1">&#39;sa_layer_norm&#39;</span><span class="p">:</span> <span class="s1">&#39;attention.output.LayerNorm&#39;</span><span class="p">,</span>
+    <span class="s1">&#39;ffn.lin1&#39;</span><span class="p">:</span> <span class="s1">&#39;intermediate.dense&#39;</span><span class="p">,</span>
+    <span class="s1">&#39;ffn.lin2&#39;</span><span class="p">:</span> <span class="s1">&#39;output.dense&#39;</span><span class="p">,</span>
+    <span class="s1">&#39;output_layer_norm&#39;</span><span class="p">:</span> <span class="s1">&#39;output.LayerNorm&#39;</span><span class="p">,</span>
+<span class="p">}</span>
+
+
+<span class="k">class</span> <span class="nc">BertConfig</span><span class="p">(</span><span class="nb">object</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;Configuration class to store the configuration of a `BertModel`.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+
+    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span>
+                 <span class="n">vocab_size_or_config_json_file</span><span class="p">,</span>
+                 <span class="n">hidden_size</span><span class="o">=</span><span class="mi">768</span><span class="p">,</span>
+                 <span class="n">num_hidden_layers</span><span class="o">=</span><span class="mi">12</span><span class="p">,</span>
+                 <span class="n">num_attention_heads</span><span class="o">=</span><span class="mi">12</span><span class="p">,</span>
+                 <span class="n">intermediate_size</span><span class="o">=</span><span class="mi">3072</span><span class="p">,</span>
+                 <span class="n">hidden_act</span><span class="o">=</span><span class="s2">&quot;gelu&quot;</span><span class="p">,</span>
+                 <span class="n">hidden_dropout_prob</span><span class="o">=</span><span class="mf">0.1</span><span class="p">,</span>
+                 <span class="n">attention_probs_dropout_prob</span><span class="o">=</span><span class="mf">0.1</span><span class="p">,</span>
+                 <span class="n">max_position_embeddings</span><span class="o">=</span><span class="mi">512</span><span class="p">,</span>
+                 <span class="n">type_vocab_size</span><span class="o">=</span><span class="mi">2</span><span class="p">,</span>
+                 <span class="n">initializer_range</span><span class="o">=</span><span class="mf">0.02</span><span class="p">,</span>
+                 <span class="n">layer_norm_eps</span><span class="o">=</span><span class="mf">1e-12</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Constructs BertConfig.</span>
+
+<span class="sd">        Args:</span>
+<span class="sd">            vocab_size_or_config_json_file: Vocabulary size of `inputs_ids` in `BertModel`.</span>
+<span class="sd">            hidden_size: Size of the encoder layers and the pooler layer.</span>
+<span class="sd">            num_hidden_layers: Number of hidden layers in the Transformer encoder.</span>
+<span class="sd">            num_attention_heads: Number of attention heads for each attention layer in</span>
+<span class="sd">                the Transformer encoder.</span>
+<span class="sd">            intermediate_size: The size of the &quot;intermediate&quot; (i.e., feed-forward)</span>
+<span class="sd">                layer in the Transformer encoder.</span>
+<span class="sd">            hidden_act: The non-linear activation function (function or string) in the</span>
+<span class="sd">                encoder and pooler. If string, &quot;gelu&quot;, &quot;relu&quot; and &quot;swish&quot; are supported.</span>
+<span class="sd">            hidden_dropout_prob: The dropout probabilitiy for all fully connected</span>
+<span class="sd">                layers in the embeddings, encoder, and pooler.</span>
+<span class="sd">            attention_probs_dropout_prob: The dropout ratio for the attention</span>
+<span class="sd">                probabilities.</span>
+<span class="sd">            max_position_embeddings: The maximum sequence length that this model might</span>
+<span class="sd">                ever be used with. Typically set this to something large just in case</span>
+<span class="sd">                (e.g., 512 or 1024 or 2048).</span>
+<span class="sd">            type_vocab_size: The vocabulary size of the `token_type_ids` passed into</span>
+<span class="sd">                `BertModel`.</span>
+<span class="sd">            initializer_range: The sttdev of the truncated_normal_initializer for</span>
+<span class="sd">                initializing all weight matrices.</span>
+<span class="sd">            layer_norm_eps: The epsilon used by LayerNorm.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">vocab_size_or_config_json_file</span><span class="p">,</span> <span class="nb">str</span><span class="p">):</span>
+            <span class="k">with</span> <span class="nb">open</span><span class="p">(</span><span class="n">vocab_size_or_config_json_file</span><span class="p">,</span> <span class="s2">&quot;r&quot;</span><span class="p">,</span> <span class="n">encoding</span><span class="o">=</span><span class="s1">&#39;utf-8&#39;</span><span class="p">)</span> <span class="k">as</span> <span class="n">reader</span><span class="p">:</span>
+                <span class="n">json_config</span> <span class="o">=</span> <span class="n">json</span><span class="o">.</span><span class="n">loads</span><span class="p">(</span><span class="n">reader</span><span class="o">.</span><span class="n">read</span><span class="p">())</span>
+            <span class="k">for</span> <span class="n">key</span><span class="p">,</span> <span class="n">value</span> <span class="ow">in</span> <span class="n">json_config</span><span class="o">.</span><span class="n">items</span><span class="p">():</span>
+                <span class="bp">self</span><span class="o">.</span><span class="vm">__dict__</span><span class="p">[</span><span class="n">key</span><span class="p">]</span> <span class="o">=</span> <span class="n">value</span>
+        <span class="k">elif</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">vocab_size_or_config_json_file</span><span class="p">,</span> <span class="nb">int</span><span class="p">):</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">vocab_size</span> <span class="o">=</span> <span class="n">vocab_size_or_config_json_file</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">hidden_size</span> <span class="o">=</span> <span class="n">hidden_size</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">num_hidden_layers</span> <span class="o">=</span> <span class="n">num_hidden_layers</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">num_attention_heads</span> <span class="o">=</span> <span class="n">num_attention_heads</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">hidden_act</span> <span class="o">=</span> <span class="n">hidden_act</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">intermediate_size</span> <span class="o">=</span> <span class="n">intermediate_size</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">hidden_dropout_prob</span> <span class="o">=</span> <span class="n">hidden_dropout_prob</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">attention_probs_dropout_prob</span> <span class="o">=</span> <span class="n">attention_probs_dropout_prob</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">max_position_embeddings</span> <span class="o">=</span> <span class="n">max_position_embeddings</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">type_vocab_size</span> <span class="o">=</span> <span class="n">type_vocab_size</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">initializer_range</span> <span class="o">=</span> <span class="n">initializer_range</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">layer_norm_eps</span> <span class="o">=</span> <span class="n">layer_norm_eps</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">&quot;First argument must be either a vocabulary size (int)&quot;</span>
+                             <span class="s2">&quot;or the path to a pretrained model config file (str)&quot;</span><span class="p">)</span>
+
+    <span class="nd">@classmethod</span>
+    <span class="k">def</span> <span class="nf">from_dict</span><span class="p">(</span><span class="bp">cls</span><span class="p">,</span> <span class="n">json_object</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Constructs a `BertConfig` from a Python dictionary of parameters.&quot;&quot;&quot;</span>
+        <span class="n">config</span> <span class="o">=</span> <span class="n">BertConfig</span><span class="p">(</span><span class="n">vocab_size_or_config_json_file</span><span class="o">=-</span><span class="mi">1</span><span class="p">)</span>
+        <span class="k">for</span> <span class="n">key</span><span class="p">,</span> <span class="n">value</span> <span class="ow">in</span> <span class="n">json_object</span><span class="o">.</span><span class="n">items</span><span class="p">():</span>
+            <span class="n">config</span><span class="o">.</span><span class="vm">__dict__</span><span class="p">[</span><span class="n">key</span><span class="p">]</span> <span class="o">=</span> <span class="n">value</span>
+        <span class="k">return</span> <span class="n">config</span>
+
+    <span class="nd">@classmethod</span>
+    <span class="k">def</span> <span class="nf">from_json_file</span><span class="p">(</span><span class="bp">cls</span><span class="p">,</span> <span class="n">json_file</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Constructs a `BertConfig` from a json file of parameters.&quot;&quot;&quot;</span>
+        <span class="k">with</span> <span class="nb">open</span><span class="p">(</span><span class="n">json_file</span><span class="p">,</span> <span class="s2">&quot;r&quot;</span><span class="p">,</span> <span class="n">encoding</span><span class="o">=</span><span class="s1">&#39;utf-8&#39;</span><span class="p">)</span> <span class="k">as</span> <span class="n">reader</span><span class="p">:</span>
+            <span class="n">text</span> <span class="o">=</span> <span class="n">reader</span><span class="o">.</span><span class="n">read</span><span class="p">()</span>
+        <span class="k">return</span> <span class="bp">cls</span><span class="o">.</span><span class="n">from_dict</span><span class="p">(</span><span class="n">json</span><span class="o">.</span><span class="n">loads</span><span class="p">(</span><span class="n">text</span><span class="p">))</span>
+
+    <span class="k">def</span> <span class="nf">__repr__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">return</span> <span class="nb">str</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">to_json_string</span><span class="p">())</span>
+
+    <span class="k">def</span> <span class="nf">to_dict</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Serializes this instance to a Python dictionary.&quot;&quot;&quot;</span>
+        <span class="n">output</span> <span class="o">=</span> <span class="n">copy</span><span class="o">.</span><span class="n">deepcopy</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="vm">__dict__</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">output</span>
+
+    <span class="k">def</span> <span class="nf">to_json_string</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Serializes this instance to a JSON string.&quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="n">json</span><span class="o">.</span><span class="n">dumps</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">to_dict</span><span class="p">(),</span> <span class="n">indent</span><span class="o">=</span><span class="mi">2</span><span class="p">,</span> <span class="n">sort_keys</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span> <span class="o">+</span> <span class="s2">&quot;</span><span class="se">\n</span><span class="s2">&quot;</span>
+
+    <span class="k">def</span> <span class="nf">to_json_file</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">json_file_path</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot; Save this instance to a json file.&quot;&quot;&quot;</span>
+        <span class="k">with</span> <span class="nb">open</span><span class="p">(</span><span class="n">json_file_path</span><span class="p">,</span> <span class="s2">&quot;w&quot;</span><span class="p">,</span> <span class="n">encoding</span><span class="o">=</span><span class="s1">&#39;utf-8&#39;</span><span class="p">)</span> <span class="k">as</span> <span class="n">writer</span><span class="p">:</span>
+            <span class="n">writer</span><span class="o">.</span><span class="n">write</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">to_json_string</span><span class="p">())</span>
+
+
+<span class="k">def</span> <span class="nf">gelu</span><span class="p">(</span><span class="n">x</span><span class="p">):</span>
+    <span class="k">return</span> <span class="n">x</span> <span class="o">*</span> <span class="mf">0.5</span> <span class="o">*</span> <span class="p">(</span><span class="mf">1.0</span> <span class="o">+</span> <span class="n">torch</span><span class="o">.</span><span class="n">erf</span><span class="p">(</span><span class="n">x</span> <span class="o">/</span> <span class="n">math</span><span class="o">.</span><span class="n">sqrt</span><span class="p">(</span><span class="mf">2.0</span><span class="p">)))</span>
+
+
+<span class="k">def</span> <span class="nf">swish</span><span class="p">(</span><span class="n">x</span><span class="p">):</span>
+    <span class="k">return</span> <span class="n">x</span> <span class="o">*</span> <span class="n">torch</span><span class="o">.</span><span class="n">sigmoid</span><span class="p">(</span><span class="n">x</span><span class="p">)</span>
+
+
+<span class="n">ACT2FN</span> <span class="o">=</span> <span class="p">{</span><span class="s2">&quot;gelu&quot;</span><span class="p">:</span> <span class="n">gelu</span><span class="p">,</span> <span class="s2">&quot;relu&quot;</span><span class="p">:</span> <span class="n">torch</span><span class="o">.</span><span class="n">nn</span><span class="o">.</span><span class="n">functional</span><span class="o">.</span><span class="n">relu</span><span class="p">,</span> <span class="s2">&quot;swish&quot;</span><span class="p">:</span> <span class="n">swish</span><span class="p">}</span>
+
+
+<span class="k">def</span> <span class="nf">_get_bert_dir</span><span class="p">(</span><span class="n">model_dir_or_name</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s1">&#39;en-base-uncased&#39;</span><span class="p">):</span>
+    <span class="k">if</span> <span class="n">model_dir_or_name</span><span class="o">.</span><span class="n">lower</span><span class="p">()</span> <span class="ow">in</span> <span class="n">PRETRAINED_BERT_MODEL_DIR</span><span class="p">:</span>
+        <span class="n">model_url</span> <span class="o">=</span> <span class="n">_get_embedding_url</span><span class="p">(</span><span class="s1">&#39;bert&#39;</span><span class="p">,</span> <span class="n">model_dir_or_name</span><span class="o">.</span><span class="n">lower</span><span class="p">())</span>
+        <span class="n">model_dir</span> <span class="o">=</span> <span class="n">cached_path</span><span class="p">(</span><span class="n">model_url</span><span class="p">,</span> <span class="n">name</span><span class="o">=</span><span class="s1">&#39;embedding&#39;</span><span class="p">)</span>
+        <span class="c1"># 检查是否存在</span>
+    <span class="k">elif</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">isdir</span><span class="p">(</span><span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">abspath</span><span class="p">(</span><span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">expanduser</span><span class="p">(</span><span class="n">model_dir_or_name</span><span class="p">))):</span>
+        <span class="n">model_dir</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">abspath</span><span class="p">(</span><span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">expanduser</span><span class="p">(</span><span class="n">model_dir_or_name</span><span class="p">))</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="n">logger</span><span class="o">.</span><span class="n">error</span><span class="p">(</span><span class="n">f</span><span class="s2">&quot;Cannot recognize BERT dir or name ``</span><span class="si">{model_dir_or_name}</span><span class="s2">``.&quot;</span><span class="p">)</span>
+        <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="n">f</span><span class="s2">&quot;Cannot recognize BERT dir or name ``</span><span class="si">{model_dir_or_name}</span><span class="s2">``.&quot;</span><span class="p">)</span>
+    <span class="k">return</span> <span class="nb">str</span><span class="p">(</span><span class="n">model_dir</span><span class="p">)</span>
+
+
+<span class="k">class</span> <span class="nc">BertLayerNorm</span><span class="p">(</span><span class="n">nn</span><span class="o">.</span><span class="n">Module</span><span class="p">):</span>
+    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">hidden_size</span><span class="p">,</span> <span class="n">eps</span><span class="o">=</span><span class="mf">1e-12</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Construct a layernorm module in the TF style (epsilon inside the square root).</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="nb">super</span><span class="p">(</span><span class="n">BertLayerNorm</span><span class="p">,</span> <span class="bp">self</span><span class="p">)</span><span class="o">.</span><span class="fm">__init__</span><span class="p">()</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">weight</span> <span class="o">=</span> <span class="n">nn</span><span class="o">.</span><span class="n">Parameter</span><span class="p">(</span><span class="n">torch</span><span class="o">.</span><span class="n">ones</span><span class="p">(</span><span class="n">hidden_size</span><span class="p">))</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">bias</span> <span class="o">=</span> <span class="n">nn</span><span class="o">.</span><span class="n">Parameter</span><span class="p">(</span><span class="n">torch</span><span class="o">.</span><span class="n">zeros</span><span class="p">(</span><span class="n">hidden_size</span><span class="p">))</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">variance_epsilon</span> <span class="o">=</span> <span class="n">eps</span>
+
+    <span class="k">def</span> <span class="nf">forward</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">x</span><span class="p">):</span>
+        <span class="n">u</span> <span class="o">=</span> <span class="n">x</span><span class="o">.</span><span class="n">mean</span><span class="p">(</span><span class="o">-</span><span class="mi">1</span><span class="p">,</span> <span class="n">keepdim</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+        <span class="n">s</span> <span class="o">=</span> <span class="p">(</span><span class="n">x</span> <span class="o">-</span> <span class="n">u</span><span class="p">)</span><span class="o">.</span><span class="n">pow</span><span class="p">(</span><span class="mi">2</span><span class="p">)</span><span class="o">.</span><span class="n">mean</span><span class="p">(</span><span class="o">-</span><span class="mi">1</span><span class="p">,</span> <span class="n">keepdim</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+        <span class="n">x</span> <span class="o">=</span> <span class="p">(</span><span class="n">x</span> <span class="o">-</span> <span class="n">u</span><span class="p">)</span> <span class="o">/</span> <span class="n">torch</span><span class="o">.</span><span class="n">sqrt</span><span class="p">(</span><span class="n">s</span> <span class="o">+</span> <span class="bp">self</span><span class="o">.</span><span class="n">variance_epsilon</span><span class="p">)</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">weight</span> <span class="o">*</span> <span class="n">x</span> <span class="o">+</span> <span class="bp">self</span><span class="o">.</span><span class="n">bias</span>
+
+
+<span class="k">class</span> <span class="nc">DistilBertEmbeddings</span><span class="p">(</span><span class="n">nn</span><span class="o">.</span><span class="n">Module</span><span class="p">):</span>
+    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">config</span><span class="p">):</span>
+        <span class="nb">super</span><span class="p">(</span><span class="n">DistilBertEmbeddings</span><span class="p">,</span> <span class="bp">self</span><span class="p">)</span><span class="o">.</span><span class="fm">__init__</span><span class="p">()</span>
+
+        <span class="k">def</span> <span class="nf">create_sinusoidal_embeddings</span><span class="p">(</span><span class="n">n_pos</span><span class="p">,</span> <span class="n">dim</span><span class="p">,</span> <span class="n">out</span><span class="p">):</span>
+            <span class="n">position_enc</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">([</span>
+                <span class="p">[</span><span class="n">pos</span> <span class="o">/</span> <span class="n">np</span><span class="o">.</span><span class="n">power</span><span class="p">(</span><span class="mi">10000</span><span class="p">,</span> <span class="mi">2</span> <span class="o">*</span> <span class="p">(</span><span class="n">j</span> <span class="o">//</span> <span class="mi">2</span><span class="p">)</span> <span class="o">/</span> <span class="n">dim</span><span class="p">)</span> <span class="k">for</span> <span class="n">j</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">dim</span><span class="p">)]</span>
+                <span class="k">for</span> <span class="n">pos</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">n_pos</span><span class="p">)</span>
+            <span class="p">])</span>
+            <span class="n">out</span><span class="p">[:,</span> <span class="mi">0</span><span class="p">::</span><span class="mi">2</span><span class="p">]</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">FloatTensor</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">sin</span><span class="p">(</span><span class="n">position_enc</span><span class="p">[:,</span> <span class="mi">0</span><span class="p">::</span><span class="mi">2</span><span class="p">]))</span>
+            <span class="n">out</span><span class="p">[:,</span> <span class="mi">1</span><span class="p">::</span><span class="mi">2</span><span class="p">]</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">FloatTensor</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">cos</span><span class="p">(</span><span class="n">position_enc</span><span class="p">[:,</span> <span class="mi">1</span><span class="p">::</span><span class="mi">2</span><span class="p">]))</span>
+            <span class="n">out</span><span class="o">.</span><span class="n">detach_</span><span class="p">()</span>
+            <span class="n">out</span><span class="o">.</span><span class="n">requires_grad</span> <span class="o">=</span> <span class="kc">False</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">word_embeddings</span> <span class="o">=</span> <span class="n">nn</span><span class="o">.</span><span class="n">Embedding</span><span class="p">(</span><span class="n">config</span><span class="o">.</span><span class="n">vocab_size</span><span class="p">,</span> <span class="n">config</span><span class="o">.</span><span class="n">hidden_size</span><span class="p">,</span> <span class="n">padding_idx</span><span class="o">=</span><span class="mi">0</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">position_embeddings</span> <span class="o">=</span> <span class="n">nn</span><span class="o">.</span><span class="n">Embedding</span><span class="p">(</span><span class="n">config</span><span class="o">.</span><span class="n">max_position_embeddings</span><span class="p">,</span> <span class="n">config</span><span class="o">.</span><span class="n">hidden_size</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">config</span><span class="o">.</span><span class="n">sinusoidal_pos_embds</span><span class="p">:</span>
+            <span class="n">create_sinusoidal_embeddings</span><span class="p">(</span><span class="n">n_pos</span><span class="o">=</span><span class="n">config</span><span class="o">.</span><span class="n">max_position_embeddings</span><span class="p">,</span>
+                                         <span class="n">dim</span><span class="o">=</span><span class="n">config</span><span class="o">.</span><span class="n">hidden_size</span><span class="p">,</span>
+                                         <span class="n">out</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">position_embeddings</span><span class="o">.</span><span class="n">weight</span><span class="p">)</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">LayerNorm</span> <span class="o">=</span> <span class="n">nn</span><span class="o">.</span><span class="n">LayerNorm</span><span class="p">(</span><span class="n">config</span><span class="o">.</span><span class="n">hidden_size</span><span class="p">,</span> <span class="n">eps</span><span class="o">=</span><span class="mf">1e-12</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">dropout</span> <span class="o">=</span> <span class="n">nn</span><span class="o">.</span><span class="n">Dropout</span><span class="p">(</span><span class="n">config</span><span class="o">.</span><span class="n">hidden_dropout_prob</span><span class="p">)</span>
+
+    <span class="k">def</span> <span class="nf">forward</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">input_ids</span><span class="p">,</span> <span class="n">token_type_ids</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Parameters</span>
+<span class="sd">        ----------</span>
+<span class="sd">        input_ids: torch.tensor(bs, max_seq_length)</span>
+<span class="sd">            The token ids to embed.</span>
+<span class="sd">        token_type_ids: no used.</span>
+<span class="sd">        Outputs</span>
+<span class="sd">        -------</span>
+<span class="sd">        embeddings: torch.tensor(bs, max_seq_length, dim)</span>
+<span class="sd">            The embedded tokens (plus position embeddings, no token_type embeddings)</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">seq_length</span> <span class="o">=</span> <span class="n">input_ids</span><span class="o">.</span><span class="n">size</span><span class="p">(</span><span class="mi">1</span><span class="p">)</span>
+        <span class="n">position_ids</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">arange</span><span class="p">(</span><span class="n">seq_length</span><span class="p">,</span> <span class="n">dtype</span><span class="o">=</span><span class="n">torch</span><span class="o">.</span><span class="n">long</span><span class="p">,</span> <span class="n">device</span><span class="o">=</span><span class="n">input_ids</span><span class="o">.</span><span class="n">device</span><span class="p">)</span> <span class="c1"># (max_seq_length)</span>
+        <span class="n">position_ids</span> <span class="o">=</span> <span class="n">position_ids</span><span class="o">.</span><span class="n">unsqueeze</span><span class="p">(</span><span class="mi">0</span><span class="p">)</span><span class="o">.</span><span class="n">expand_as</span><span class="p">(</span><span class="n">input_ids</span><span class="p">)</span>                      <span class="c1"># (bs, max_seq_length)</span>
+
+        <span class="n">word_embeddings</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">word_embeddings</span><span class="p">(</span><span class="n">input_ids</span><span class="p">)</span>                   <span class="c1"># (bs, max_seq_length, dim)</span>
+        <span class="n">position_embeddings</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">position_embeddings</span><span class="p">(</span><span class="n">position_ids</span><span class="p">)</span>        <span class="c1"># (bs, max_seq_length, dim)</span>
+
+        <span class="n">embeddings</span> <span class="o">=</span> <span class="n">word_embeddings</span> <span class="o">+</span> <span class="n">position_embeddings</span>  <span class="c1"># (bs, max_seq_length, dim)</span>
+        <span class="n">embeddings</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">LayerNorm</span><span class="p">(</span><span class="n">embeddings</span><span class="p">)</span>             <span class="c1"># (bs, max_seq_length, dim)</span>
+        <span class="n">embeddings</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">dropout</span><span class="p">(</span><span class="n">embeddings</span><span class="p">)</span>               <span class="c1"># (bs, max_seq_length, dim)</span>
+        <span class="k">return</span> <span class="n">embeddings</span>
+
+
+<span class="k">class</span> <span class="nc">BertEmbeddings</span><span class="p">(</span><span class="n">nn</span><span class="o">.</span><span class="n">Module</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;Construct the embeddings from word, position and token_type embeddings.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+
+    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">config</span><span class="p">):</span>
+        <span class="nb">super</span><span class="p">(</span><span class="n">BertEmbeddings</span><span class="p">,</span> <span class="bp">self</span><span class="p">)</span><span class="o">.</span><span class="fm">__init__</span><span class="p">()</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">word_embeddings</span> <span class="o">=</span> <span class="n">nn</span><span class="o">.</span><span class="n">Embedding</span><span class="p">(</span><span class="n">config</span><span class="o">.</span><span class="n">vocab_size</span><span class="p">,</span> <span class="n">config</span><span class="o">.</span><span class="n">hidden_size</span><span class="p">,</span> <span class="n">padding_idx</span><span class="o">=</span><span class="mi">0</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">position_embeddings</span> <span class="o">=</span> <span class="n">nn</span><span class="o">.</span><span class="n">Embedding</span><span class="p">(</span><span class="n">config</span><span class="o">.</span><span class="n">max_position_embeddings</span><span class="p">,</span> <span class="n">config</span><span class="o">.</span><span class="n">hidden_size</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">token_type_embeddings</span> <span class="o">=</span> <span class="n">nn</span><span class="o">.</span><span class="n">Embedding</span><span class="p">(</span><span class="n">config</span><span class="o">.</span><span class="n">type_vocab_size</span><span class="p">,</span> <span class="n">config</span><span class="o">.</span><span class="n">hidden_size</span><span class="p">)</span>
+
+        <span class="c1"># self.LayerNorm is not snake-cased to stick with TensorFlow model variable name and be able to load</span>
+        <span class="c1"># any TensorFlow checkpoint file</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">LayerNorm</span> <span class="o">=</span> <span class="n">BertLayerNorm</span><span class="p">(</span><span class="n">config</span><span class="o">.</span><span class="n">hidden_size</span><span class="p">,</span> <span class="n">eps</span><span class="o">=</span><span class="n">config</span><span class="o">.</span><span class="n">layer_norm_eps</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">CWS_LayerNorm</span> <span class="o">=</span> <span class="n">BertLayerNorm</span><span class="p">(</span><span class="n">config</span><span class="o">.</span><span class="n">hidden_size</span><span class="p">,</span> <span class="n">eps</span><span class="o">=</span><span class="n">config</span><span class="o">.</span><span class="n">layer_norm_eps</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">dropout</span> <span class="o">=</span> <span class="n">nn</span><span class="o">.</span><span class="n">Dropout</span><span class="p">(</span><span class="n">config</span><span class="o">.</span><span class="n">hidden_dropout_prob</span><span class="p">)</span>
+
+    <span class="k">def</span> <span class="nf">forward</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">input_ids</span><span class="p">,</span><span class="n">token_type_ids</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
+        <span class="n">seq_length</span> <span class="o">=</span> <span class="n">input_ids</span><span class="o">.</span><span class="n">size</span><span class="p">(</span><span class="mi">1</span><span class="p">)</span>
+        <span class="n">position_ids</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">arange</span><span class="p">(</span><span class="n">seq_length</span><span class="p">,</span> <span class="n">dtype</span><span class="o">=</span><span class="n">torch</span><span class="o">.</span><span class="n">long</span><span class="p">,</span> <span class="n">device</span><span class="o">=</span><span class="n">input_ids</span><span class="o">.</span><span class="n">device</span><span class="p">)</span>
+        <span class="n">position_ids</span> <span class="o">=</span> <span class="n">position_ids</span><span class="o">.</span><span class="n">unsqueeze</span><span class="p">(</span><span class="mi">0</span><span class="p">)</span><span class="o">.</span><span class="n">expand_as</span><span class="p">(</span><span class="n">input_ids</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">token_type_ids</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="n">token_type_ids</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">zeros_like</span><span class="p">(</span><span class="n">input_ids</span><span class="p">)</span>
+
+        <span class="n">words_embeddings</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">word_embeddings</span><span class="p">(</span><span class="n">input_ids</span><span class="p">)</span>
+        <span class="n">position_embeddings</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">position_embeddings</span><span class="p">(</span><span class="n">position_ids</span><span class="p">)</span>
+        <span class="n">token_type_embeddings</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">token_type_embeddings</span><span class="p">(</span><span class="n">token_type_ids</span><span class="p">)</span>
+
+        <span class="n">embeddings</span> <span class="o">=</span> <span class="n">words_embeddings</span> <span class="o">+</span> <span class="n">position_embeddings</span> <span class="o">+</span> <span class="n">token_type_embeddings</span>
+        <span class="n">embeddings</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">LayerNorm</span><span class="p">(</span><span class="n">embeddings</span><span class="p">)</span>
+        <span class="n">embeddings</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">dropout</span><span class="p">(</span><span class="n">embeddings</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">embeddings</span>
+
+
+<span class="k">class</span> <span class="nc">BertSelfAttention</span><span class="p">(</span><span class="n">nn</span><span class="o">.</span><span class="n">Module</span><span class="p">):</span>
+    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">config</span><span class="p">):</span>
+        <span class="nb">super</span><span class="p">(</span><span class="n">BertSelfAttention</span><span class="p">,</span> <span class="bp">self</span><span class="p">)</span><span class="o">.</span><span class="fm">__init__</span><span class="p">()</span>
+        <span class="k">if</span> <span class="n">config</span><span class="o">.</span><span class="n">hidden_size</span> <span class="o">%</span> <span class="n">config</span><span class="o">.</span><span class="n">num_attention_heads</span> <span class="o">!=</span> <span class="mi">0</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span>
+                <span class="s2">&quot;The hidden size (</span><span class="si">%d</span><span class="s2">) is not a multiple of the number of attention &quot;</span>
+                <span class="s2">&quot;heads (</span><span class="si">%d</span><span class="s2">)&quot;</span> <span class="o">%</span> <span class="p">(</span><span class="n">config</span><span class="o">.</span><span class="n">hidden_size</span><span class="p">,</span> <span class="n">config</span><span class="o">.</span><span class="n">num_attention_heads</span><span class="p">))</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">num_attention_heads</span> <span class="o">=</span> <span class="n">config</span><span class="o">.</span><span class="n">num_attention_heads</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">attention_head_size</span> <span class="o">=</span> <span class="nb">int</span><span class="p">(</span><span class="n">config</span><span class="o">.</span><span class="n">hidden_size</span> <span class="o">/</span> <span class="n">config</span><span class="o">.</span><span class="n">num_attention_heads</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">all_head_size</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">num_attention_heads</span> <span class="o">*</span> <span class="bp">self</span><span class="o">.</span><span class="n">attention_head_size</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">query</span> <span class="o">=</span> <span class="n">nn</span><span class="o">.</span><span class="n">Linear</span><span class="p">(</span><span class="n">config</span><span class="o">.</span><span class="n">hidden_size</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">all_head_size</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">key</span> <span class="o">=</span> <span class="n">nn</span><span class="o">.</span><span class="n">Linear</span><span class="p">(</span><span class="n">config</span><span class="o">.</span><span class="n">hidden_size</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">all_head_size</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">value</span> <span class="o">=</span> <span class="n">nn</span><span class="o">.</span><span class="n">Linear</span><span class="p">(</span><span class="n">config</span><span class="o">.</span><span class="n">hidden_size</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">all_head_size</span><span class="p">)</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">dropout</span> <span class="o">=</span> <span class="n">nn</span><span class="o">.</span><span class="n">Dropout</span><span class="p">(</span><span class="n">config</span><span class="o">.</span><span class="n">attention_probs_dropout_prob</span><span class="p">)</span>
+
+    <span class="k">def</span> <span class="nf">transpose_for_scores</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">x</span><span class="p">):</span>
+        <span class="n">new_x_shape</span> <span class="o">=</span> <span class="n">x</span><span class="o">.</span><span class="n">size</span><span class="p">()[:</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span> <span class="o">+</span> <span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">num_attention_heads</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">attention_head_size</span><span class="p">)</span>
+        <span class="n">x</span> <span class="o">=</span> <span class="n">x</span><span class="o">.</span><span class="n">view</span><span class="p">(</span><span class="o">*</span><span class="n">new_x_shape</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">x</span><span class="o">.</span><span class="n">permute</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="mi">2</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="mi">3</span><span class="p">)</span>
+
+    <span class="k">def</span> <span class="nf">forward</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">hidden_states</span><span class="p">,</span> <span class="n">attention_mask</span><span class="p">):</span>
+        <span class="n">mixed_query_layer</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">query</span><span class="p">(</span><span class="n">hidden_states</span><span class="p">)</span>
+        <span class="n">mixed_key_layer</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">key</span><span class="p">(</span><span class="n">hidden_states</span><span class="p">)</span>
+        <span class="n">mixed_value_layer</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">value</span><span class="p">(</span><span class="n">hidden_states</span><span class="p">)</span>
+
+        <span class="n">query_layer</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">transpose_for_scores</span><span class="p">(</span><span class="n">mixed_query_layer</span><span class="p">)</span>
+        <span class="n">key_layer</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">transpose_for_scores</span><span class="p">(</span><span class="n">mixed_key_layer</span><span class="p">)</span>
+        <span class="n">value_layer</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">transpose_for_scores</span><span class="p">(</span><span class="n">mixed_value_layer</span><span class="p">)</span>
+
+        <span class="c1"># Take the dot product between &quot;query&quot; and &quot;key&quot; to get the raw attention scores.</span>
+        <span class="n">attention_scores</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">matmul</span><span class="p">(</span><span class="n">query_layer</span><span class="p">,</span> <span class="n">key_layer</span><span class="o">.</span><span class="n">transpose</span><span class="p">(</span><span class="o">-</span><span class="mi">1</span><span class="p">,</span> <span class="o">-</span><span class="mi">2</span><span class="p">))</span>
+        <span class="n">attention_scores</span> <span class="o">=</span> <span class="n">attention_scores</span> <span class="o">/</span> <span class="n">math</span><span class="o">.</span><span class="n">sqrt</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">attention_head_size</span><span class="p">)</span>
+        <span class="c1"># Apply the attention mask is (precomputed for all layers in BertModel forward() function)</span>
+        <span class="n">attention_scores</span> <span class="o">=</span> <span class="n">attention_scores</span> <span class="o">+</span> <span class="n">attention_mask</span>
+
+        <span class="c1"># Normalize the attention scores to probabilities.</span>
+        <span class="n">attention_probs</span> <span class="o">=</span> <span class="n">nn</span><span class="o">.</span><span class="n">Softmax</span><span class="p">(</span><span class="n">dim</span><span class="o">=-</span><span class="mi">1</span><span class="p">)(</span><span class="n">attention_scores</span><span class="p">)</span>
+
+        <span class="c1"># This is actually dropping out entire tokens to attend to, which might</span>
+        <span class="c1"># seem a bit unusual, but is taken from the original Transformer paper.</span>
+        <span class="n">attention_probs</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">dropout</span><span class="p">(</span><span class="n">attention_probs</span><span class="p">)</span>
+
+        <span class="n">context_layer</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">matmul</span><span class="p">(</span><span class="n">attention_probs</span><span class="p">,</span> <span class="n">value_layer</span><span class="p">)</span>
+        <span class="n">context_layer</span> <span class="o">=</span> <span class="n">context_layer</span><span class="o">.</span><span class="n">permute</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="mi">2</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="mi">3</span><span class="p">)</span><span class="o">.</span><span class="n">contiguous</span><span class="p">()</span>
+        <span class="n">new_context_layer_shape</span> <span class="o">=</span> <span class="n">context_layer</span><span class="o">.</span><span class="n">size</span><span class="p">()[:</span><span class="o">-</span><span class="mi">2</span><span class="p">]</span> <span class="o">+</span> <span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">all_head_size</span><span class="p">,)</span>
+        <span class="n">context_layer</span> <span class="o">=</span> <span class="n">context_layer</span><span class="o">.</span><span class="n">view</span><span class="p">(</span><span class="o">*</span><span class="n">new_context_layer_shape</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">context_layer</span>
+
+
+<span class="k">class</span> <span class="nc">BertSelfOutput</span><span class="p">(</span><span class="n">nn</span><span class="o">.</span><span class="n">Module</span><span class="p">):</span>
+    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">config</span><span class="p">):</span>
+        <span class="nb">super</span><span class="p">(</span><span class="n">BertSelfOutput</span><span class="p">,</span> <span class="bp">self</span><span class="p">)</span><span class="o">.</span><span class="fm">__init__</span><span class="p">()</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">dense</span> <span class="o">=</span> <span class="n">nn</span><span class="o">.</span><span class="n">Linear</span><span class="p">(</span><span class="n">config</span><span class="o">.</span><span class="n">hidden_size</span><span class="p">,</span> <span class="n">config</span><span class="o">.</span><span class="n">hidden_size</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">LayerNorm</span> <span class="o">=</span> <span class="n">BertLayerNorm</span><span class="p">(</span><span class="n">config</span><span class="o">.</span><span class="n">hidden_size</span><span class="p">,</span> <span class="n">eps</span><span class="o">=</span><span class="n">config</span><span class="o">.</span><span class="n">layer_norm_eps</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">dropout</span> <span class="o">=</span> <span class="n">nn</span><span class="o">.</span><span class="n">Dropout</span><span class="p">(</span><span class="n">config</span><span class="o">.</span><span class="n">hidden_dropout_prob</span><span class="p">)</span>
+
+    <span class="k">def</span> <span class="nf">forward</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">hidden_states</span><span class="p">,</span> <span class="n">input_tensor</span><span class="p">):</span>
+        <span class="n">hidden_states</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">dense</span><span class="p">(</span><span class="n">hidden_states</span><span class="p">)</span>
+        <span class="n">hidden_states</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">dropout</span><span class="p">(</span><span class="n">hidden_states</span><span class="p">)</span>
+        <span class="n">hidden_states</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">LayerNorm</span><span class="p">(</span><span class="n">hidden_states</span> <span class="o">+</span> <span class="n">input_tensor</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">hidden_states</span>
+
+
+<span class="k">class</span> <span class="nc">BertAttention</span><span class="p">(</span><span class="n">nn</span><span class="o">.</span><span class="n">Module</span><span class="p">):</span>
+    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">config</span><span class="p">):</span>
+        <span class="nb">super</span><span class="p">(</span><span class="n">BertAttention</span><span class="p">,</span> <span class="bp">self</span><span class="p">)</span><span class="o">.</span><span class="fm">__init__</span><span class="p">()</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">self</span> <span class="o">=</span> <span class="n">BertSelfAttention</span><span class="p">(</span><span class="n">config</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">output</span> <span class="o">=</span> <span class="n">BertSelfOutput</span><span class="p">(</span><span class="n">config</span><span class="p">)</span>
+
+    <span class="k">def</span> <span class="nf">forward</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">input_tensor</span><span class="p">,</span> <span class="n">attention_mask</span><span class="p">):</span>
+        <span class="n">self_output</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">self</span><span class="p">(</span><span class="n">input_tensor</span><span class="p">,</span> <span class="n">attention_mask</span><span class="p">)</span>
+        <span class="n">attention_output</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">output</span><span class="p">(</span><span class="n">self_output</span><span class="p">,</span> <span class="n">input_tensor</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">attention_output</span>
+
+
+<span class="k">class</span> <span class="nc">BertIntermediate</span><span class="p">(</span><span class="n">nn</span><span class="o">.</span><span class="n">Module</span><span class="p">):</span>
+    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">config</span><span class="p">):</span>
+        <span class="nb">super</span><span class="p">(</span><span class="n">BertIntermediate</span><span class="p">,</span> <span class="bp">self</span><span class="p">)</span><span class="o">.</span><span class="fm">__init__</span><span class="p">()</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">dense</span> <span class="o">=</span> <span class="n">nn</span><span class="o">.</span><span class="n">Linear</span><span class="p">(</span><span class="n">config</span><span class="o">.</span><span class="n">hidden_size</span><span class="p">,</span> <span class="n">config</span><span class="o">.</span><span class="n">intermediate_size</span><span class="p">)</span>
+        <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">config</span><span class="o">.</span><span class="n">hidden_act</span><span class="p">,</span> <span class="nb">str</span><span class="p">):</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">intermediate_act_fn</span> <span class="o">=</span> <span class="n">ACT2FN</span><span class="p">[</span><span class="n">config</span><span class="o">.</span><span class="n">hidden_act</span><span class="p">]</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">intermediate_act_fn</span> <span class="o">=</span> <span class="n">config</span><span class="o">.</span><span class="n">hidden_act</span>
+
+    <span class="k">def</span> <span class="nf">forward</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">hidden_states</span><span class="p">):</span>
+        <span class="n">hidden_states</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">dense</span><span class="p">(</span><span class="n">hidden_states</span><span class="p">)</span>
+        <span class="n">hidden_states</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">intermediate_act_fn</span><span class="p">(</span><span class="n">hidden_states</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">hidden_states</span>
+
+
+<span class="k">class</span> <span class="nc">BertOutput</span><span class="p">(</span><span class="n">nn</span><span class="o">.</span><span class="n">Module</span><span class="p">):</span>
+    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">config</span><span class="p">):</span>
+        <span class="nb">super</span><span class="p">(</span><span class="n">BertOutput</span><span class="p">,</span> <span class="bp">self</span><span class="p">)</span><span class="o">.</span><span class="fm">__init__</span><span class="p">()</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">dense</span> <span class="o">=</span> <span class="n">nn</span><span class="o">.</span><span class="n">Linear</span><span class="p">(</span><span class="n">config</span><span class="o">.</span><span class="n">intermediate_size</span><span class="p">,</span> <span class="n">config</span><span class="o">.</span><span class="n">hidden_size</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">LayerNorm</span> <span class="o">=</span> <span class="n">BertLayerNorm</span><span class="p">(</span><span class="n">config</span><span class="o">.</span><span class="n">hidden_size</span><span class="p">,</span> <span class="n">eps</span><span class="o">=</span><span class="n">config</span><span class="o">.</span><span class="n">layer_norm_eps</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">dropout</span> <span class="o">=</span> <span class="n">nn</span><span class="o">.</span><span class="n">Dropout</span><span class="p">(</span><span class="n">config</span><span class="o">.</span><span class="n">hidden_dropout_prob</span><span class="p">)</span>
+
+    <span class="k">def</span> <span class="nf">forward</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">hidden_states</span><span class="p">,</span> <span class="n">input_tensor</span><span class="p">):</span>
+        <span class="n">hidden_states</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">dense</span><span class="p">(</span><span class="n">hidden_states</span><span class="p">)</span>
+        <span class="n">hidden_states</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">dropout</span><span class="p">(</span><span class="n">hidden_states</span><span class="p">)</span>
+        <span class="n">hidden_states</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">LayerNorm</span><span class="p">(</span><span class="n">hidden_states</span> <span class="o">+</span> <span class="n">input_tensor</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">hidden_states</span>
+
+
+<span class="k">class</span> <span class="nc">BertLayer</span><span class="p">(</span><span class="n">nn</span><span class="o">.</span><span class="n">Module</span><span class="p">):</span>
+    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">config</span><span class="p">):</span>
+        <span class="nb">super</span><span class="p">(</span><span class="n">BertLayer</span><span class="p">,</span> <span class="bp">self</span><span class="p">)</span><span class="o">.</span><span class="fm">__init__</span><span class="p">()</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">attention</span> <span class="o">=</span> <span class="n">BertAttention</span><span class="p">(</span><span class="n">config</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">intermediate</span> <span class="o">=</span> <span class="n">BertIntermediate</span><span class="p">(</span><span class="n">config</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">output</span> <span class="o">=</span> <span class="n">BertOutput</span><span class="p">(</span><span class="n">config</span><span class="p">)</span>
+
+    <span class="k">def</span> <span class="nf">forward</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">hidden_states</span><span class="p">,</span> <span class="n">attention_mask</span><span class="p">):</span>
+        <span class="n">attention_output</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">attention</span><span class="p">(</span><span class="n">hidden_states</span><span class="p">,</span> <span class="n">attention_mask</span><span class="p">)</span>
+        <span class="n">intermediate_output</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">intermediate</span><span class="p">(</span><span class="n">attention_output</span><span class="p">)</span>
+        <span class="n">layer_output</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">output</span><span class="p">(</span><span class="n">intermediate_output</span><span class="p">,</span> <span class="n">attention_output</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">layer_output</span>
+
+
+<span class="k">class</span> <span class="nc">BertEncoder</span><span class="p">(</span><span class="n">nn</span><span class="o">.</span><span class="n">Module</span><span class="p">):</span>
+    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">config</span><span class="p">):</span>
+        <span class="nb">super</span><span class="p">(</span><span class="n">BertEncoder</span><span class="p">,</span> <span class="bp">self</span><span class="p">)</span><span class="o">.</span><span class="fm">__init__</span><span class="p">()</span>
+        <span class="n">layer</span> <span class="o">=</span> <span class="n">BertLayer</span><span class="p">(</span><span class="n">config</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">layer</span> <span class="o">=</span> <span class="n">nn</span><span class="o">.</span><span class="n">ModuleList</span><span class="p">([</span><span class="n">copy</span><span class="o">.</span><span class="n">deepcopy</span><span class="p">(</span><span class="n">layer</span><span class="p">)</span> <span class="k">for</span> <span class="n">_</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">config</span><span class="o">.</span><span class="n">num_hidden_layers</span><span class="p">)])</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">use_theseus</span><span class="o">=</span><span class="kc">False</span>
+
+    <span class="k">def</span> <span class="nf">init_theseus</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span><span class="n">replace_p</span><span class="o">=</span><span class="mf">0.5</span><span class="p">,</span><span class="n">use_linear</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span><span class="n">total_step</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">scc_n_layer</span><span class="o">=</span><span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">layer</span><span class="p">)</span><span class="o">//</span><span class="mi">2</span>
+        <span class="nb">print</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">scc_n_layer</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">scc_layer</span><span class="o">=</span><span class="n">nn</span><span class="o">.</span><span class="n">ModuleList</span><span class="p">([</span><span class="n">copy</span><span class="o">.</span><span class="n">deepcopy</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">layer</span><span class="p">[</span><span class="n">ix</span><span class="p">])</span> <span class="k">for</span> <span class="n">ix</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">scc_n_layer</span><span class="p">)])</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">use_theseus</span><span class="o">=</span><span class="kc">True</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">replace_p</span><span class="o">=</span><span class="n">replace_p</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">use_linear</span><span class="o">=</span><span class="n">use_linear</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">step</span><span class="o">=</span><span class="mi">0</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">total_data</span><span class="o">=</span><span class="n">total_step</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">use_linear</span><span class="o">==</span><span class="kc">True</span> <span class="ow">and</span> <span class="bp">self</span><span class="o">.</span><span class="n">total_data</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span>
+                <span class="s2">&quot;total step num must be provided if use linear.&quot;</span><span class="p">)</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">use_linear</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">k</span><span class="o">=</span><span class="p">(</span><span class="mf">1.0</span><span class="o">-</span><span class="bp">self</span><span class="o">.</span><span class="n">replace_p</span><span class="p">)</span><span class="o">/</span><span class="bp">self</span><span class="o">.</span><span class="n">total_data</span>
+        <span class="k">for</span> <span class="n">p</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">layer</span><span class="o">.</span><span class="n">parameters</span><span class="p">():</span>
+            <span class="n">p</span><span class="o">.</span><span class="n">requires_grad</span><span class="o">=</span><span class="kc">False</span>
+        <span class="k">for</span> <span class="n">p</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">scc_layer</span><span class="o">.</span><span class="n">parameters</span><span class="p">():</span>
+            <span class="n">p</span><span class="o">.</span><span class="n">requires_grad</span><span class="o">=</span><span class="kc">True</span>
+
+    <span class="k">def</span> <span class="nf">theseus_replace</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="n">randnum</span><span class="o">=</span><span class="n">random</span><span class="o">.</span><span class="n">random</span><span class="p">()</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">use_linear</span><span class="o">==</span><span class="kc">False</span><span class="p">:</span>
+            <span class="k">return</span> <span class="n">randnum</span><span class="o">&lt;</span><span class="bp">self</span><span class="o">.</span><span class="n">replace_p</span>
+        <span class="n">p</span><span class="o">=</span><span class="nb">min</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span><span class="bp">self</span><span class="o">.</span><span class="n">k</span><span class="o">*</span><span class="bp">self</span><span class="o">.</span><span class="n">step</span><span class="o">+</span><span class="bp">self</span><span class="o">.</span><span class="n">replace_p</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">randnum</span><span class="o">&lt;</span><span class="n">p</span>
+
+    <span class="k">def</span> <span class="nf">forward</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">hidden_states</span><span class="p">,</span> <span class="n">attention_mask</span><span class="p">,</span> <span class="n">output_all_encoded_layers</span><span class="o">=</span><span class="kc">True</span><span class="p">):</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="bp">self</span><span class="o">.</span><span class="n">use_theseus</span><span class="p">:</span>
+            <span class="n">layers</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">layer</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">training</span><span class="p">:</span>
+                <span class="n">layers</span><span class="o">=</span><span class="p">[]</span>
+                <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">scc_n_layer</span><span class="p">):</span>
+                    <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">theseus_replace</span><span class="p">():</span>
+                        <span class="n">layers</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">scc_layer</span><span class="p">[</span><span class="n">i</span><span class="p">])</span>
+                    <span class="k">else</span><span class="p">:</span>
+                        <span class="n">layers</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">layer</span><span class="p">[</span><span class="n">i</span><span class="o">*</span><span class="mi">2</span><span class="p">])</span>
+                        <span class="n">layers</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">layer</span><span class="p">[</span><span class="n">i</span><span class="o">*</span><span class="mi">2</span><span class="o">+</span><span class="mi">1</span><span class="p">])</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">step</span><span class="o">+=</span><span class="mi">1</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="n">layers</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">scc_layer</span>
+
+
+        <span class="c1">#标记</span>
+        <span class="n">all_encoder_layers</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="k">for</span> <span class="n">layer_module</span> <span class="ow">in</span> <span class="n">layers</span><span class="p">:</span>
+            <span class="n">hidden_states</span> <span class="o">=</span> <span class="n">layer_module</span><span class="p">(</span><span class="n">hidden_states</span><span class="p">,</span> <span class="n">attention_mask</span><span class="p">)</span>
+            <span class="k">if</span> <span class="n">output_all_encoded_layers</span><span class="p">:</span>
+                <span class="n">all_encoder_layers</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">hidden_states</span><span class="p">)</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="n">output_all_encoded_layers</span><span class="p">:</span>
+            <span class="n">all_encoder_layers</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">hidden_states</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">all_encoder_layers</span>
+
+
+<span class="k">class</span> <span class="nc">BertPooler</span><span class="p">(</span><span class="n">nn</span><span class="o">.</span><span class="n">Module</span><span class="p">):</span>
+    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">config</span><span class="p">):</span>
+        <span class="nb">super</span><span class="p">(</span><span class="n">BertPooler</span><span class="p">,</span> <span class="bp">self</span><span class="p">)</span><span class="o">.</span><span class="fm">__init__</span><span class="p">()</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">dense</span> <span class="o">=</span> <span class="n">nn</span><span class="o">.</span><span class="n">Linear</span><span class="p">(</span><span class="n">config</span><span class="o">.</span><span class="n">hidden_size</span><span class="p">,</span> <span class="n">config</span><span class="o">.</span><span class="n">hidden_size</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">activation</span> <span class="o">=</span> <span class="n">nn</span><span class="o">.</span><span class="n">Tanh</span><span class="p">()</span>
+
+    <span class="k">def</span> <span class="nf">forward</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">hidden_states</span><span class="p">):</span>
+        <span class="c1"># We &quot;pool&quot; the model by simply taking the hidden state corresponding</span>
+        <span class="c1"># to the first token.</span>
+        <span class="n">first_token_tensor</span> <span class="o">=</span> <span class="n">hidden_states</span><span class="p">[:,</span> <span class="mi">0</span><span class="p">]</span>
+        <span class="n">pooled_output</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">dense</span><span class="p">(</span><span class="n">first_token_tensor</span><span class="p">)</span>
+        <span class="n">pooled_output</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">activation</span><span class="p">(</span><span class="n">pooled_output</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">pooled_output</span>
+
+
+<div class="viewcode-block" id="BertModel"><a class="viewcode-back" href="../../../fastHan.model.bert_encoder_theseus.html#fastHan.model.bert_encoder_theseus.BertModel">[文档]</a><span class="k">class</span> <span class="nc">BertModel</span><span class="p">(</span><span class="n">nn</span><span class="o">.</span><span class="n">Module</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    BERT(Bidirectional Embedding Representations from Transformers).</span>
+
+<span class="sd">    用预训练权重矩阵来建立BERT模型::</span>
+
+<span class="sd">        model = BertModel.from_pretrained(model_dir_or_name)</span>
+
+<span class="sd">    用随机初始化权重矩阵来建立BERT模型::</span>
+
+<span class="sd">        model = BertModel()</span>
+
+<span class="sd">    :param int vocab_size: 词表大小，默认值为30522，为BERT English uncase版本的词表大小</span>
+<span class="sd">    :param int hidden_size: 隐层大小，默认值为768，为BERT base的版本</span>
+<span class="sd">    :param int num_hidden_layers: 隐藏层数，默认值为12，为BERT base的版本</span>
+<span class="sd">    :param int num_attention_heads: 多头注意力头数，默认值为12，为BERT base的版本</span>
+<span class="sd">    :param int intermediate_size: FFN隐藏层大小，默认值是3072，为BERT base的版本</span>
+<span class="sd">    :param str hidden_act: FFN隐藏层激活函数，默认值为``gelu``</span>
+<span class="sd">    :param float hidden_dropout_prob: FFN隐藏层dropout，默认值为0.1</span>
+<span class="sd">    :param float attention_probs_dropout_prob: Attention层的dropout，默认值为0.1</span>
+<span class="sd">    :param int max_position_embeddings: 最大的序列长度，默认值为512，</span>
+<span class="sd">    :param int type_vocab_size: 最大segment数量，默认值为2</span>
+<span class="sd">    :param int initializer_range: 初始化权重范围，默认值为0.02</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+
+<div class="viewcode-block" id="BertModel.__init__"><a class="viewcode-back" href="../../../fastHan.model.bert_encoder_theseus.html#fastHan.model.bert_encoder_theseus.BertModel.__init__">[文档]</a>    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">config</span><span class="p">,</span> <span class="o">*</span><span class="n">inputs</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
+        <span class="nb">super</span><span class="p">(</span><span class="n">BertModel</span><span class="p">,</span> <span class="bp">self</span><span class="p">)</span><span class="o">.</span><span class="fm">__init__</span><span class="p">()</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">config</span><span class="p">,</span> <span class="n">BertConfig</span><span class="p">):</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span>
+                <span class="s2">&quot;Parameter config in `</span><span class="si">{}</span><span class="s2">(config)` should be an instance of class `BertConfig`. &quot;</span>
+                <span class="s2">&quot;To create a model from a Google pretrained model use &quot;</span>
+                <span class="s2">&quot;`model = </span><span class="si">{}</span><span class="s2">.from_pretrained(PRETRAINED_MODEL_NAME)`&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span>
+                    <span class="bp">self</span><span class="o">.</span><span class="vm">__class__</span><span class="o">.</span><span class="vm">__name__</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="vm">__class__</span><span class="o">.</span><span class="vm">__name__</span>
+                <span class="p">))</span>
+        <span class="nb">super</span><span class="p">(</span><span class="n">BertModel</span><span class="p">,</span> <span class="bp">self</span><span class="p">)</span><span class="o">.</span><span class="fm">__init__</span><span class="p">()</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">config</span> <span class="o">=</span> <span class="n">config</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">hidden_size</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">config</span><span class="o">.</span><span class="n">hidden_size</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">model_type</span> <span class="o">=</span> <span class="s1">&#39;bert&#39;</span>
+        <span class="k">if</span> <span class="nb">hasattr</span><span class="p">(</span><span class="n">config</span><span class="p">,</span> <span class="s1">&#39;sinusoidal_pos_embds&#39;</span><span class="p">):</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">model_type</span> <span class="o">=</span> <span class="s1">&#39;distilbert&#39;</span>
+        <span class="k">elif</span> <span class="s1">&#39;model_type&#39;</span> <span class="ow">in</span> <span class="n">kwargs</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">model_type</span> <span class="o">=</span> <span class="n">kwargs</span><span class="p">[</span><span class="s1">&#39;model_type&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">lower</span><span class="p">()</span>
+
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">model_type</span> <span class="o">==</span> <span class="s1">&#39;distilbert&#39;</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">embeddings</span> <span class="o">=</span> <span class="n">DistilBertEmbeddings</span><span class="p">(</span><span class="n">config</span><span class="p">)</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">embeddings</span> <span class="o">=</span> <span class="n">BertEmbeddings</span><span class="p">(</span><span class="n">config</span><span class="p">)</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">encoder</span> <span class="o">=</span> <span class="n">BertEncoder</span><span class="p">(</span><span class="n">config</span><span class="p">)</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">model_type</span> <span class="o">!=</span> <span class="s1">&#39;distilbert&#39;</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">pooler</span> <span class="o">=</span> <span class="n">BertPooler</span><span class="p">(</span><span class="n">config</span><span class="p">)</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="s1">&#39;DistilBert has NOT pooler, will use hidden states of [CLS] token as pooled output.&#39;</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">apply</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">init_bert_weights</span><span class="p">)</span></div>
+
+<div class="viewcode-block" id="BertModel.init_bert_weights"><a class="viewcode-back" href="../../../fastHan.model.bert_encoder_theseus.html#fastHan.model.bert_encoder_theseus.BertModel.init_bert_weights">[文档]</a>    <span class="k">def</span> <span class="nf">init_bert_weights</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">module</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot; Initialize the weights.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">module</span><span class="p">,</span> <span class="p">(</span><span class="n">nn</span><span class="o">.</span><span class="n">Linear</span><span class="p">,</span> <span class="n">nn</span><span class="o">.</span><span class="n">Embedding</span><span class="p">)):</span>
+            <span class="c1"># Slightly different from the TF version which uses truncated_normal for initialization</span>
+            <span class="c1"># cf https://github.com/pytorch/pytorch/pull/5617</span>
+            <span class="n">module</span><span class="o">.</span><span class="n">weight</span><span class="o">.</span><span class="n">data</span><span class="o">.</span><span class="n">normal_</span><span class="p">(</span><span class="n">mean</span><span class="o">=</span><span class="mf">0.0</span><span class="p">,</span> <span class="n">std</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">config</span><span class="o">.</span><span class="n">initializer_range</span><span class="p">)</span>
+        <span class="k">elif</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">module</span><span class="p">,</span> <span class="n">BertLayerNorm</span><span class="p">):</span>
+            <span class="n">module</span><span class="o">.</span><span class="n">bias</span><span class="o">.</span><span class="n">data</span><span class="o">.</span><span class="n">zero_</span><span class="p">()</span>
+            <span class="n">module</span><span class="o">.</span><span class="n">weight</span><span class="o">.</span><span class="n">data</span><span class="o">.</span><span class="n">fill_</span><span class="p">(</span><span class="mf">1.0</span><span class="p">)</span>
+        <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">module</span><span class="p">,</span> <span class="n">nn</span><span class="o">.</span><span class="n">Linear</span><span class="p">)</span> <span class="ow">and</span> <span class="n">module</span><span class="o">.</span><span class="n">bias</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="n">module</span><span class="o">.</span><span class="n">bias</span><span class="o">.</span><span class="n">data</span><span class="o">.</span><span class="n">zero_</span><span class="p">()</span></div>
+
+<div class="viewcode-block" id="BertModel.forward"><a class="viewcode-back" href="../../../fastHan.model.bert_encoder_theseus.html#fastHan.model.bert_encoder_theseus.BertModel.forward">[文档]</a>    <span class="k">def</span> <span class="nf">forward</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">input_ids</span><span class="p">,</span> <span class="n">token_type_ids</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">attention_mask</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">output_all_encoded_layers</span><span class="o">=</span><span class="kc">True</span><span class="p">):</span>
+        <span class="k">if</span> <span class="n">attention_mask</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="n">attention_mask</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">ones_like</span><span class="p">(</span><span class="n">input_ids</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">token_type_ids</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="n">token_type_ids</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">zeros_like</span><span class="p">(</span><span class="n">input_ids</span><span class="p">)</span>
+
+        <span class="c1"># We create a 3D attention mask from a 2D tensor mask.</span>
+        <span class="c1"># Sizes are [batch_size, 1, 1, to_seq_length]</span>
+        <span class="c1"># So we can broadcast to [batch_size, num_heads, from_seq_length, to_seq_length]</span>
+        <span class="c1"># this attention mask is more simple than the triangular masking of causal attention</span>
+        <span class="c1"># used in OpenAI GPT, we just need to prepare the broadcast dimension here.</span>
+        <span class="n">extended_attention_mask</span> <span class="o">=</span> <span class="n">attention_mask</span><span class="o">.</span><span class="n">unsqueeze</span><span class="p">(</span><span class="mi">1</span><span class="p">)</span><span class="o">.</span><span class="n">unsqueeze</span><span class="p">(</span><span class="mi">2</span><span class="p">)</span>
+
+        <span class="c1"># Since attention_mask is 1.0 for positions we want to attend and 0.0 for</span>
+        <span class="c1"># masked positions, this operation will create a tensor which is 0.0 for</span>
+        <span class="c1"># positions we want to attend and -10000.0 for masked positions.</span>
+        <span class="c1"># Since we are adding it to the raw scores before the softmax, this is</span>
+        <span class="c1"># effectively the same as removing these entirely.</span>
+        <span class="n">extended_attention_mask</span> <span class="o">=</span> <span class="n">extended_attention_mask</span><span class="o">.</span><span class="n">to</span><span class="p">(</span><span class="n">dtype</span><span class="o">=</span><span class="nb">next</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">parameters</span><span class="p">())</span><span class="o">.</span><span class="n">dtype</span><span class="p">)</span>  <span class="c1"># fp16 compatibility</span>
+        <span class="n">extended_attention_mask</span> <span class="o">=</span> <span class="p">(</span><span class="mf">1.0</span> <span class="o">-</span> <span class="n">extended_attention_mask</span><span class="p">)</span> <span class="o">*</span> <span class="o">-</span><span class="mf">10000.0</span>
+
+        <span class="n">embedding_output</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">embeddings</span><span class="p">(</span><span class="n">input_ids</span><span class="p">,</span> <span class="n">token_type_ids</span><span class="p">)</span>
+        <span class="n">encoded_layers</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">encoder</span><span class="p">(</span><span class="n">embedding_output</span><span class="p">,</span>
+                                      <span class="n">extended_attention_mask</span><span class="p">,</span>
+                                      <span class="n">output_all_encoded_layers</span><span class="o">=</span><span class="n">output_all_encoded_layers</span><span class="p">)</span>
+        <span class="n">sequence_output</span> <span class="o">=</span> <span class="n">encoded_layers</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">model_type</span> <span class="o">!=</span> <span class="s1">&#39;distilbert&#39;</span><span class="p">:</span>
+            <span class="n">pooled_output</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">pooler</span><span class="p">(</span><span class="n">sequence_output</span><span class="p">)</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">pooled_output</span> <span class="o">=</span> <span class="n">sequence_output</span><span class="p">[:,</span> <span class="mi">0</span><span class="p">]</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="n">output_all_encoded_layers</span><span class="p">:</span>
+            <span class="n">encoded_layers</span> <span class="o">=</span> <span class="n">encoded_layers</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span>
+        <span class="k">return</span> <span class="n">encoded_layers</span><span class="p">,</span> <span class="n">pooled_output</span></div>
+
+<div class="viewcode-block" id="BertModel.from_pretrained"><a class="viewcode-back" href="../../../fastHan.model.bert_encoder_theseus.html#fastHan.model.bert_encoder_theseus.BertModel.from_pretrained">[文档]</a>    <span class="nd">@classmethod</span>
+    <span class="k">def</span> <span class="nf">from_pretrained</span><span class="p">(</span><span class="bp">cls</span><span class="p">,</span> <span class="n">model_dir_or_name</span><span class="p">,</span> <span class="n">layer_num</span><span class="o">=</span><span class="mi">12</span><span class="p">,</span> <span class="o">*</span><span class="n">inputs</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
+        <span class="k">if</span> <span class="n">layer_num</span><span class="o">&gt;</span><span class="mi">12</span><span class="p">:</span>
+            <span class="k">return</span> <span class="kc">None</span>
+        <span class="n">state_dict</span> <span class="o">=</span> <span class="n">kwargs</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s1">&#39;state_dict&#39;</span><span class="p">,</span> <span class="kc">None</span><span class="p">)</span>
+        <span class="n">kwargs</span><span class="o">.</span><span class="n">pop</span><span class="p">(</span><span class="s1">&#39;state_dict&#39;</span><span class="p">,</span> <span class="kc">None</span><span class="p">)</span>
+        <span class="n">kwargs</span><span class="o">.</span><span class="n">pop</span><span class="p">(</span><span class="s1">&#39;cache_dir&#39;</span><span class="p">,</span> <span class="kc">None</span><span class="p">)</span>
+        <span class="n">kwargs</span><span class="o">.</span><span class="n">pop</span><span class="p">(</span><span class="s1">&#39;from_tf&#39;</span><span class="p">,</span> <span class="kc">None</span><span class="p">)</span>
+
+
+        <span class="c1"># get model dir from name or dir</span>
+        <span class="n">pretrained_model_dir</span> <span class="o">=</span> <span class="n">_get_bert_dir</span><span class="p">(</span><span class="n">model_dir_or_name</span><span class="p">)</span>
+
+        <span class="c1"># Load config</span>
+        <span class="n">config_file</span> <span class="o">=</span> <span class="n">_get_file_name_base_on_postfix</span><span class="p">(</span><span class="n">pretrained_model_dir</span><span class="p">,</span> <span class="s1">&#39;.json&#39;</span><span class="p">)</span>
+        <span class="n">config</span> <span class="o">=</span> <span class="n">BertConfig</span><span class="o">.</span><span class="n">from_json_file</span><span class="p">(</span><span class="n">config_file</span><span class="p">)</span>
+
+
+        <span class="k">if</span> <span class="n">state_dict</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="n">weights_path</span> <span class="o">=</span> <span class="n">_get_file_name_base_on_postfix</span><span class="p">(</span><span class="n">pretrained_model_dir</span><span class="p">,</span> <span class="s1">&#39;.bin&#39;</span><span class="p">)</span>
+            <span class="n">state_dict</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">load</span><span class="p">(</span><span class="n">weights_path</span><span class="p">,</span> <span class="n">map_location</span><span class="o">=</span><span class="s1">&#39;cpu&#39;</span><span class="p">)</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">logger</span><span class="o">.</span><span class="n">error</span><span class="p">(</span><span class="n">f</span><span class="s1">&#39;Cannot load parameters through `state_dict` variable.&#39;</span><span class="p">)</span>
+            <span class="k">raise</span> <span class="ne">RuntimeError</span><span class="p">(</span><span class="n">f</span><span class="s1">&#39;Cannot load parameters through `state_dict` variable.&#39;</span><span class="p">)</span>
+
+        <span class="n">model_type</span> <span class="o">=</span> <span class="s1">&#39;BERT&#39;</span>
+        <span class="n">old_keys</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="n">new_keys</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="k">for</span> <span class="n">key</span> <span class="ow">in</span> <span class="n">state_dict</span><span class="o">.</span><span class="n">keys</span><span class="p">():</span>
+            <span class="n">new_key</span> <span class="o">=</span> <span class="kc">None</span>
+            <span class="k">for</span> <span class="n">key_name</span> <span class="ow">in</span> <span class="n">BERT_KEY_RENAME_MAP_1</span><span class="p">:</span>
+                <span class="k">if</span> <span class="n">key_name</span> <span class="ow">in</span> <span class="n">key</span><span class="p">:</span>
+                    <span class="n">new_key</span> <span class="o">=</span> <span class="n">key</span><span class="o">.</span><span class="n">replace</span><span class="p">(</span><span class="n">key_name</span><span class="p">,</span> <span class="n">BERT_KEY_RENAME_MAP_1</span><span class="p">[</span><span class="n">key_name</span><span class="p">])</span>
+                    <span class="k">if</span> <span class="s1">&#39;distilbert&#39;</span> <span class="ow">in</span> <span class="n">key</span><span class="p">:</span>
+                        <span class="n">model_type</span> <span class="o">=</span> <span class="s1">&#39;DistilBert&#39;</span>
+                    <span class="k">break</span>
+            <span class="k">if</span> <span class="n">new_key</span><span class="p">:</span>
+                <span class="n">old_keys</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">key</span><span class="p">)</span>
+                <span class="n">new_keys</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">new_key</span><span class="p">)</span>
+        <span class="k">for</span> <span class="n">old_key</span><span class="p">,</span> <span class="n">new_key</span> <span class="ow">in</span> <span class="nb">zip</span><span class="p">(</span><span class="n">old_keys</span><span class="p">,</span> <span class="n">new_keys</span><span class="p">):</span>
+            <span class="n">state_dict</span><span class="p">[</span><span class="n">new_key</span><span class="p">]</span> <span class="o">=</span> <span class="n">state_dict</span><span class="o">.</span><span class="n">pop</span><span class="p">(</span><span class="n">old_key</span><span class="p">)</span>
+
+        <span class="n">old_keys</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="n">new_keys</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="k">for</span> <span class="n">key</span> <span class="ow">in</span> <span class="n">state_dict</span><span class="o">.</span><span class="n">keys</span><span class="p">():</span>
+            <span class="n">new_key</span> <span class="o">=</span> <span class="kc">None</span>
+            <span class="k">for</span> <span class="n">key_name</span> <span class="ow">in</span> <span class="n">BERT_KEY_RENAME_MAP_2</span><span class="p">:</span>
+                <span class="k">if</span> <span class="n">key_name</span> <span class="ow">in</span> <span class="n">key</span><span class="p">:</span>
+                    <span class="n">new_key</span> <span class="o">=</span> <span class="n">key</span><span class="o">.</span><span class="n">replace</span><span class="p">(</span><span class="n">key_name</span><span class="p">,</span> <span class="n">BERT_KEY_RENAME_MAP_2</span><span class="p">[</span><span class="n">key_name</span><span class="p">])</span>
+                    <span class="k">break</span>
+            <span class="k">if</span> <span class="n">new_key</span><span class="p">:</span>
+                <span class="n">old_keys</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">key</span><span class="p">)</span>
+                <span class="n">new_keys</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">new_key</span><span class="p">)</span>
+        <span class="k">for</span> <span class="n">old_key</span><span class="p">,</span> <span class="n">new_key</span> <span class="ow">in</span> <span class="nb">zip</span><span class="p">(</span><span class="n">old_keys</span><span class="p">,</span> <span class="n">new_keys</span><span class="p">):</span>
+            <span class="n">state_dict</span><span class="p">[</span><span class="n">new_key</span><span class="p">]</span> <span class="o">=</span> <span class="n">state_dict</span><span class="o">.</span><span class="n">pop</span><span class="p">(</span><span class="n">old_key</span><span class="p">)</span>
+
+        <span class="c1">## 下段为fastHan处理所需</span>
+        <span class="n">old_keys</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="n">new_keys</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="k">for</span> <span class="n">key</span> <span class="ow">in</span> <span class="n">state_dict</span><span class="o">.</span><span class="n">keys</span><span class="p">():</span>
+            <span class="n">new_key</span> <span class="o">=</span> <span class="kc">None</span>
+            <span class="k">for</span> <span class="n">key_name</span> <span class="ow">in</span> <span class="p">[</span><span class="s1">&#39;embed.model.encoder&#39;</span><span class="p">]:</span>
+                <span class="k">if</span> <span class="n">key_name</span> <span class="ow">in</span> <span class="n">key</span><span class="p">:</span>
+                    <span class="n">new_key</span> <span class="o">=</span> <span class="n">key</span><span class="o">.</span><span class="n">replace</span><span class="p">(</span><span class="n">key_name</span><span class="p">,</span> <span class="s1">&#39;bert&#39;</span><span class="p">)</span>
+                    <span class="k">break</span>
+            <span class="k">if</span> <span class="n">new_key</span><span class="p">:</span>
+                <span class="n">old_keys</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">key</span><span class="p">)</span>
+                <span class="n">new_keys</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">new_key</span><span class="p">)</span>
+        <span class="k">for</span> <span class="n">old_key</span><span class="p">,</span> <span class="n">new_key</span> <span class="ow">in</span> <span class="nb">zip</span><span class="p">(</span><span class="n">old_keys</span><span class="p">,</span> <span class="n">new_keys</span><span class="p">):</span>
+            <span class="n">state_dict</span><span class="p">[</span><span class="n">new_key</span><span class="p">]</span> <span class="o">=</span> <span class="n">state_dict</span><span class="o">.</span><span class="n">pop</span><span class="p">(</span><span class="n">old_key</span><span class="p">)</span>
+
+        <span class="c1"># Instantiate model.</span>
+        <span class="n">config</span><span class="o">.</span><span class="n">num_hidden_layers</span><span class="o">=</span><span class="n">layer_num</span>
+        <span class="n">model</span> <span class="o">=</span> <span class="bp">cls</span><span class="p">(</span><span class="n">config</span><span class="p">,</span> <span class="n">model_type</span><span class="o">=</span><span class="n">model_type</span><span class="p">,</span> <span class="o">*</span><span class="n">inputs</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
+        <span class="n">missing_keys</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="n">unexpected_keys</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="n">error_msgs</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="c1"># copy state_dict so _load_from_state_dict can modify it</span>
+        <span class="n">metadata</span> <span class="o">=</span> <span class="nb">getattr</span><span class="p">(</span><span class="n">state_dict</span><span class="p">,</span> <span class="s1">&#39;_metadata&#39;</span><span class="p">,</span> <span class="kc">None</span><span class="p">)</span>
+        <span class="n">state_dict</span> <span class="o">=</span> <span class="n">state_dict</span><span class="o">.</span><span class="n">copy</span><span class="p">()</span>
+        <span class="k">if</span> <span class="n">metadata</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="n">state_dict</span><span class="o">.</span><span class="n">_metadata</span> <span class="o">=</span> <span class="n">metadata</span>
+
+        <span class="k">def</span> <span class="nf">load</span><span class="p">(</span><span class="n">module</span><span class="p">,</span> <span class="n">prefix</span><span class="o">=</span><span class="s1">&#39;&#39;</span><span class="p">):</span>
+            <span class="n">local_metadata</span> <span class="o">=</span> <span class="p">{}</span> <span class="k">if</span> <span class="n">metadata</span> <span class="ow">is</span> <span class="kc">None</span> <span class="k">else</span> <span class="n">metadata</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">prefix</span><span class="p">[:</span><span class="o">-</span><span class="mi">1</span><span class="p">],</span> <span class="p">{})</span>
+            <span class="n">module</span><span class="o">.</span><span class="n">_load_from_state_dict</span><span class="p">(</span>
+                <span class="n">state_dict</span><span class="p">,</span> <span class="n">prefix</span><span class="p">,</span> <span class="n">local_metadata</span><span class="p">,</span> <span class="kc">True</span><span class="p">,</span> <span class="n">missing_keys</span><span class="p">,</span> <span class="n">unexpected_keys</span><span class="p">,</span> <span class="n">error_msgs</span><span class="p">)</span>
+            <span class="k">for</span> <span class="n">name</span><span class="p">,</span> <span class="n">child</span> <span class="ow">in</span> <span class="n">module</span><span class="o">.</span><span class="n">_modules</span><span class="o">.</span><span class="n">items</span><span class="p">():</span>
+                <span class="k">if</span> <span class="n">child</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+                    <span class="n">load</span><span class="p">(</span><span class="n">child</span><span class="p">,</span> <span class="n">prefix</span> <span class="o">+</span> <span class="n">name</span> <span class="o">+</span> <span class="s1">&#39;.&#39;</span><span class="p">)</span>
+
+        <span class="n">load</span><span class="p">(</span><span class="n">model</span><span class="p">,</span> <span class="n">prefix</span><span class="o">=</span><span class="s1">&#39;&#39;</span> <span class="k">if</span> <span class="nb">hasattr</span><span class="p">(</span><span class="n">model</span><span class="p">,</span> <span class="s1">&#39;bert&#39;</span><span class="p">)</span> <span class="k">else</span> <span class="s1">&#39;bert.&#39;</span><span class="p">)</span>
+        <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">missing_keys</span><span class="p">)</span> <span class="o">&gt;</span> <span class="mi">0</span><span class="p">:</span>
+            <span class="n">logger</span><span class="o">.</span><span class="n">warning</span><span class="p">(</span><span class="s2">&quot;Weights of </span><span class="si">{}</span><span class="s2"> not initialized from pretrained model: </span><span class="si">{}</span><span class="s2">&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span>
+                <span class="n">model</span><span class="o">.</span><span class="vm">__class__</span><span class="o">.</span><span class="vm">__name__</span><span class="p">,</span> <span class="n">missing_keys</span><span class="p">))</span>
+        <span class="c1">#if len(unexpected_keys) &gt; 0:</span>
+        <span class="c1">#    logger.warning(&quot;Weights from pretrained model not used in {}: {}&quot;.format(</span>
+        <span class="c1">#        model.__class__.__name__, unexpected_keys))</span>
+
+        <span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="n">f</span><span class="s2">&quot;Load pre-trained </span><span class="si">{model_type}</span><span class="s2"> parameters from file </span><span class="si">{weights_path}</span><span class="s2">.&quot;</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">model</span></div></div>
+
+
+<span class="k">def</span> <span class="nf">whitespace_tokenize</span><span class="p">(</span><span class="n">text</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;Runs basic whitespace cleaning and splitting on a piece of text.&quot;&quot;&quot;</span>
+    <span class="n">text</span> <span class="o">=</span> <span class="n">text</span><span class="o">.</span><span class="n">strip</span><span class="p">()</span>
+    <span class="k">if</span> <span class="ow">not</span> <span class="n">text</span><span class="p">:</span>
+        <span class="k">return</span> <span class="p">[]</span>
+    <span class="n">tokens</span> <span class="o">=</span> <span class="n">text</span><span class="o">.</span><span class="n">split</span><span class="p">()</span>
+    <span class="k">return</span> <span class="n">tokens</span>
+
+
+<span class="k">class</span> <span class="nc">WordpieceTokenizer</span><span class="p">(</span><span class="nb">object</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;Runs WordPiece tokenization.&quot;&quot;&quot;</span>
+
+    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">vocab</span><span class="p">,</span> <span class="n">unk_token</span><span class="o">=</span><span class="s2">&quot;[UNK]&quot;</span><span class="p">,</span> <span class="n">max_input_chars_per_word</span><span class="o">=</span><span class="mi">100</span><span class="p">):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">vocab</span> <span class="o">=</span> <span class="n">vocab</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">unk_token</span> <span class="o">=</span> <span class="n">unk_token</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">max_input_chars_per_word</span> <span class="o">=</span> <span class="n">max_input_chars_per_word</span>
+
+    <span class="k">def</span> <span class="nf">tokenize</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">text</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Tokenizes a piece of text into its word pieces.</span>
+
+<span class="sd">        This uses a greedy longest-match-first algorithm to perform tokenization</span>
+<span class="sd">        using the given vocabulary.</span>
+
+<span class="sd">        For example:</span>
+<span class="sd">          input = &quot;unaffable&quot;</span>
+<span class="sd">          output = [&quot;un&quot;, &quot;##aff&quot;, &quot;##able&quot;]</span>
+
+<span class="sd">        Args:</span>
+<span class="sd">          text: A single token or whitespace separated tokens. This should have</span>
+<span class="sd">            already been passed through `BasicTokenizer`.</span>
+
+<span class="sd">        Returns:</span>
+<span class="sd">          A list of wordpiece tokens.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+
+        <span class="n">output_tokens</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="k">for</span> <span class="n">token</span> <span class="ow">in</span> <span class="n">whitespace_tokenize</span><span class="p">(</span><span class="n">text</span><span class="p">):</span>
+            <span class="n">chars</span> <span class="o">=</span> <span class="nb">list</span><span class="p">(</span><span class="n">token</span><span class="p">)</span>
+            <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">chars</span><span class="p">)</span> <span class="o">&gt;</span> <span class="bp">self</span><span class="o">.</span><span class="n">max_input_chars_per_word</span><span class="p">:</span>
+                <span class="n">output_tokens</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">unk_token</span><span class="p">)</span>
+                <span class="k">continue</span>
+
+            <span class="n">is_bad</span> <span class="o">=</span> <span class="kc">False</span>
+            <span class="n">start</span> <span class="o">=</span> <span class="mi">0</span>
+            <span class="n">sub_tokens</span> <span class="o">=</span> <span class="p">[]</span>
+            <span class="k">while</span> <span class="n">start</span> <span class="o">&lt;</span> <span class="nb">len</span><span class="p">(</span><span class="n">chars</span><span class="p">):</span>
+                <span class="n">end</span> <span class="o">=</span> <span class="nb">len</span><span class="p">(</span><span class="n">chars</span><span class="p">)</span>
+                <span class="n">cur_substr</span> <span class="o">=</span> <span class="kc">None</span>
+                <span class="k">while</span> <span class="n">start</span> <span class="o">&lt;</span> <span class="n">end</span><span class="p">:</span>
+                    <span class="n">substr</span> <span class="o">=</span> <span class="s2">&quot;&quot;</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">chars</span><span class="p">[</span><span class="n">start</span><span class="p">:</span><span class="n">end</span><span class="p">])</span>
+                    <span class="k">if</span> <span class="n">start</span> <span class="o">&gt;</span> <span class="mi">0</span><span class="p">:</span>
+                        <span class="n">substr</span> <span class="o">=</span> <span class="s2">&quot;##&quot;</span> <span class="o">+</span> <span class="n">substr</span>
+                    <span class="k">if</span> <span class="n">substr</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">vocab</span><span class="p">:</span>
+                        <span class="n">cur_substr</span> <span class="o">=</span> <span class="n">substr</span>
+                        <span class="k">break</span>
+                    <span class="n">end</span> <span class="o">-=</span> <span class="mi">1</span>
+                <span class="k">if</span> <span class="n">cur_substr</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+                    <span class="n">is_bad</span> <span class="o">=</span> <span class="kc">True</span>
+                    <span class="k">break</span>
+                <span class="n">sub_tokens</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">cur_substr</span><span class="p">)</span>
+                <span class="n">start</span> <span class="o">=</span> <span class="n">end</span>
+
+            <span class="k">if</span> <span class="n">is_bad</span><span class="p">:</span>
+                <span class="n">output_tokens</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">unk_token</span><span class="p">)</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="n">output_tokens</span><span class="o">.</span><span class="n">extend</span><span class="p">(</span><span class="n">sub_tokens</span><span class="p">)</span>
+        <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">output_tokens</span><span class="p">)</span> <span class="o">==</span> <span class="mi">0</span><span class="p">:</span>  <span class="c1"># 防止里面全是空格或者回车符号</span>
+            <span class="k">return</span> <span class="p">[</span><span class="bp">self</span><span class="o">.</span><span class="n">unk_token</span><span class="p">]</span>
+        <span class="k">return</span> <span class="n">output_tokens</span>
+
+
+<span class="k">def</span> <span class="nf">load_vocab</span><span class="p">(</span><span class="n">vocab_file</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;Loads a vocabulary file into a dictionary.&quot;&quot;&quot;</span>
+    <span class="n">vocab</span> <span class="o">=</span> <span class="n">collections</span><span class="o">.</span><span class="n">OrderedDict</span><span class="p">()</span>
+    <span class="n">index</span> <span class="o">=</span> <span class="mi">0</span>
+    <span class="k">with</span> <span class="nb">open</span><span class="p">(</span><span class="n">vocab_file</span><span class="p">,</span> <span class="s2">&quot;r&quot;</span><span class="p">,</span> <span class="n">encoding</span><span class="o">=</span><span class="s2">&quot;utf-8&quot;</span><span class="p">)</span> <span class="k">as</span> <span class="n">reader</span><span class="p">:</span>
+        <span class="k">while</span> <span class="kc">True</span><span class="p">:</span>
+            <span class="n">token</span> <span class="o">=</span> <span class="n">reader</span><span class="o">.</span><span class="n">readline</span><span class="p">()</span>
+            <span class="k">if</span> <span class="ow">not</span> <span class="n">token</span><span class="p">:</span>
+                <span class="k">break</span>
+            <span class="n">token</span> <span class="o">=</span> <span class="n">token</span><span class="o">.</span><span class="n">strip</span><span class="p">()</span>
+            <span class="n">vocab</span><span class="p">[</span><span class="n">token</span><span class="p">]</span> <span class="o">=</span> <span class="n">index</span>
+            <span class="n">index</span> <span class="o">+=</span> <span class="mi">1</span>
+    <span class="k">return</span> <span class="n">vocab</span>
+
+
+<span class="k">class</span> <span class="nc">BasicTokenizer</span><span class="p">(</span><span class="nb">object</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;Runs basic tokenization (punctuation splitting, lower casing, etc.).&quot;&quot;&quot;</span>
+
+    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span>
+                 <span class="n">do_lower_case</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
+                 <span class="n">never_split</span><span class="o">=</span><span class="p">(</span><span class="s2">&quot;[UNK]&quot;</span><span class="p">,</span> <span class="s2">&quot;[SEP]&quot;</span><span class="p">,</span> <span class="s2">&quot;[PAD]&quot;</span><span class="p">,</span> <span class="s2">&quot;[CLS]&quot;</span><span class="p">,</span> <span class="s2">&quot;[MASK]&quot;</span><span class="p">)):</span>
+        <span class="sd">&quot;&quot;&quot;Constructs a BasicTokenizer.</span>
+
+<span class="sd">        Args:</span>
+<span class="sd">          do_lower_case: Whether to lower case the input.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">do_lower_case</span> <span class="o">=</span> <span class="n">do_lower_case</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">never_split</span> <span class="o">=</span> <span class="n">never_split</span>
+
+    <span class="k">def</span> <span class="nf">tokenize</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">text</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Tokenizes a piece of text.&quot;&quot;&quot;</span>
+        <span class="n">text</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_clean_text</span><span class="p">(</span><span class="n">text</span><span class="p">)</span>
+        <span class="c1"># This was added on November 1st, 2018 for the multilingual and Chinese</span>
+        <span class="c1"># models. This is also applied to the English models now, but it doesn&#39;t</span>
+        <span class="c1"># matter since the English models were not trained on any Chinese data</span>
+        <span class="c1"># and generally don&#39;t have any Chinese data in them (there are Chinese</span>
+        <span class="c1"># characters in the vocabulary because Wikipedia does have some Chinese</span>
+        <span class="c1"># words in the English Wikipedia.).</span>
+        <span class="n">text</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_tokenize_chinese_chars</span><span class="p">(</span><span class="n">text</span><span class="p">)</span>
+        <span class="n">orig_tokens</span> <span class="o">=</span> <span class="n">whitespace_tokenize</span><span class="p">(</span><span class="n">text</span><span class="p">)</span>
+        <span class="n">split_tokens</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="k">for</span> <span class="n">token</span> <span class="ow">in</span> <span class="n">orig_tokens</span><span class="p">:</span>
+            <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">do_lower_case</span> <span class="ow">and</span> <span class="n">token</span> <span class="ow">not</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">never_split</span><span class="p">:</span>
+                <span class="n">token</span> <span class="o">=</span> <span class="n">token</span><span class="o">.</span><span class="n">lower</span><span class="p">()</span>
+                <span class="n">token</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_run_strip_accents</span><span class="p">(</span><span class="n">token</span><span class="p">)</span>
+            <span class="n">split_tokens</span><span class="o">.</span><span class="n">extend</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_run_split_on_punc</span><span class="p">(</span><span class="n">token</span><span class="p">))</span>
+
+        <span class="n">output_tokens</span> <span class="o">=</span> <span class="n">whitespace_tokenize</span><span class="p">(</span><span class="s2">&quot; &quot;</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">split_tokens</span><span class="p">))</span>
+        <span class="k">return</span> <span class="n">output_tokens</span>
+
+    <span class="k">def</span> <span class="nf">_run_strip_accents</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">text</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Strips accents from a piece of text.&quot;&quot;&quot;</span>
+        <span class="n">text</span> <span class="o">=</span> <span class="n">unicodedata</span><span class="o">.</span><span class="n">normalize</span><span class="p">(</span><span class="s2">&quot;NFD&quot;</span><span class="p">,</span> <span class="n">text</span><span class="p">)</span>
+        <span class="n">output</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="k">for</span> <span class="n">char</span> <span class="ow">in</span> <span class="n">text</span><span class="p">:</span>
+            <span class="n">cat</span> <span class="o">=</span> <span class="n">unicodedata</span><span class="o">.</span><span class="n">category</span><span class="p">(</span><span class="n">char</span><span class="p">)</span>
+            <span class="k">if</span> <span class="n">cat</span> <span class="o">==</span> <span class="s2">&quot;Mn&quot;</span><span class="p">:</span>
+                <span class="k">continue</span>
+            <span class="n">output</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">char</span><span class="p">)</span>
+        <span class="k">return</span> <span class="s2">&quot;&quot;</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">output</span><span class="p">)</span>
+
+    <span class="k">def</span> <span class="nf">_run_split_on_punc</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">text</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Splits punctuation on a piece of text.&quot;&quot;&quot;</span>
+        <span class="k">if</span> <span class="n">text</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">never_split</span><span class="p">:</span>
+            <span class="k">return</span> <span class="p">[</span><span class="n">text</span><span class="p">]</span>
+        <span class="n">chars</span> <span class="o">=</span> <span class="nb">list</span><span class="p">(</span><span class="n">text</span><span class="p">)</span>
+        <span class="n">i</span> <span class="o">=</span> <span class="mi">0</span>
+        <span class="n">start_new_word</span> <span class="o">=</span> <span class="kc">True</span>
+        <span class="n">output</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="k">while</span> <span class="n">i</span> <span class="o">&lt;</span> <span class="nb">len</span><span class="p">(</span><span class="n">chars</span><span class="p">):</span>
+            <span class="n">char</span> <span class="o">=</span> <span class="n">chars</span><span class="p">[</span><span class="n">i</span><span class="p">]</span>
+            <span class="k">if</span> <span class="n">_is_punctuation</span><span class="p">(</span><span class="n">char</span><span class="p">):</span>
+                <span class="n">output</span><span class="o">.</span><span class="n">append</span><span class="p">([</span><span class="n">char</span><span class="p">])</span>
+                <span class="n">start_new_word</span> <span class="o">=</span> <span class="kc">True</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="k">if</span> <span class="n">start_new_word</span><span class="p">:</span>
+                    <span class="n">output</span><span class="o">.</span><span class="n">append</span><span class="p">([])</span>
+                <span class="n">start_new_word</span> <span class="o">=</span> <span class="kc">False</span>
+                <span class="n">output</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">char</span><span class="p">)</span>
+            <span class="n">i</span> <span class="o">+=</span> <span class="mi">1</span>
+
+        <span class="k">return</span> <span class="p">[</span><span class="s2">&quot;&quot;</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">x</span><span class="p">)</span> <span class="k">for</span> <span class="n">x</span> <span class="ow">in</span> <span class="n">output</span><span class="p">]</span>
+
+    <span class="k">def</span> <span class="nf">_tokenize_chinese_chars</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">text</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Adds whitespace around any CJK character.&quot;&quot;&quot;</span>
+        <span class="n">output</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="k">for</span> <span class="n">char</span> <span class="ow">in</span> <span class="n">text</span><span class="p">:</span>
+            <span class="n">cp</span> <span class="o">=</span> <span class="nb">ord</span><span class="p">(</span><span class="n">char</span><span class="p">)</span>
+            <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">_is_chinese_char</span><span class="p">(</span><span class="n">cp</span><span class="p">):</span>
+                <span class="n">output</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="s2">&quot; &quot;</span><span class="p">)</span>
+                <span class="n">output</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">char</span><span class="p">)</span>
+                <span class="n">output</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="s2">&quot; &quot;</span><span class="p">)</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="n">output</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">char</span><span class="p">)</span>
+        <span class="k">return</span> <span class="s2">&quot;&quot;</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">output</span><span class="p">)</span>
+
+    <span class="k">def</span> <span class="nf">_is_chinese_char</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">cp</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Checks whether CP is the codepoint of a CJK character.&quot;&quot;&quot;</span>
+        <span class="c1"># This defines a &quot;chinese character&quot; as anything in the CJK Unicode block:</span>
+        <span class="c1">#   https://en.wikipedia.org/wiki/CJK_Unified_Ideographs_(Unicode_block)</span>
+        <span class="c1">#</span>
+        <span class="c1"># Note that the CJK Unicode block is NOT all Japanese and Korean characters,</span>
+        <span class="c1"># despite its name. The modern Korean Hangul alphabet is a different block,</span>
+        <span class="c1"># as is Japanese Hiragana and Katakana. Those alphabets are used to write</span>
+        <span class="c1"># space-separated words, so they are not treated specially and handled</span>
+        <span class="c1"># like the all of the other languages.</span>
+        <span class="k">if</span> <span class="p">(((</span><span class="n">cp</span> <span class="o">&gt;=</span> <span class="mh">0x4E00</span><span class="p">)</span> <span class="ow">and</span> <span class="p">(</span><span class="n">cp</span> <span class="o">&lt;=</span> <span class="mh">0x9FFF</span><span class="p">))</span> <span class="ow">or</span>  <span class="c1">#</span>
+            <span class="p">((</span><span class="n">cp</span> <span class="o">&gt;=</span> <span class="mh">0x3400</span><span class="p">)</span> <span class="ow">and</span> <span class="p">(</span><span class="n">cp</span> <span class="o">&lt;=</span> <span class="mh">0x4DBF</span><span class="p">))</span> <span class="ow">or</span>  <span class="c1">#</span>
+            <span class="p">((</span><span class="n">cp</span> <span class="o">&gt;=</span> <span class="mh">0x20000</span><span class="p">)</span> <span class="ow">and</span> <span class="p">(</span><span class="n">cp</span> <span class="o">&lt;=</span> <span class="mh">0x2A6DF</span><span class="p">))</span> <span class="ow">or</span>  <span class="c1">#</span>
+            <span class="p">((</span><span class="n">cp</span> <span class="o">&gt;=</span> <span class="mh">0x2A700</span><span class="p">)</span> <span class="ow">and</span> <span class="p">(</span><span class="n">cp</span> <span class="o">&lt;=</span> <span class="mh">0x2B73F</span><span class="p">))</span> <span class="ow">or</span>  <span class="c1">#</span>
+            <span class="p">((</span><span class="n">cp</span> <span class="o">&gt;=</span> <span class="mh">0x2B740</span><span class="p">)</span> <span class="ow">and</span> <span class="p">(</span><span class="n">cp</span> <span class="o">&lt;=</span> <span class="mh">0x2B81F</span><span class="p">))</span> <span class="ow">or</span>  <span class="c1">#</span>
+            <span class="p">((</span><span class="n">cp</span> <span class="o">&gt;=</span> <span class="mh">0x2B820</span><span class="p">)</span> <span class="ow">and</span> <span class="p">(</span><span class="n">cp</span> <span class="o">&lt;=</span> <span class="mh">0x2CEAF</span><span class="p">))</span> <span class="ow">or</span>
+            <span class="p">((</span><span class="n">cp</span> <span class="o">&gt;=</span> <span class="mh">0xF900</span><span class="p">)</span> <span class="ow">and</span> <span class="p">(</span><span class="n">cp</span> <span class="o">&lt;=</span> <span class="mh">0xFAFF</span><span class="p">))</span> <span class="ow">or</span>  <span class="c1">#</span>
+            <span class="p">((</span><span class="n">cp</span> <span class="o">&gt;=</span> <span class="mh">0x2F800</span><span class="p">)</span> <span class="ow">and</span> <span class="p">(</span><span class="n">cp</span> <span class="o">&lt;=</span> <span class="mh">0x2FA1F</span><span class="p">))):</span>  <span class="c1">#</span>
+            <span class="k">return</span> <span class="kc">True</span>
+
+        <span class="k">return</span> <span class="kc">False</span>
+
+    <span class="k">def</span> <span class="nf">_clean_text</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">text</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Performs invalid character removal and whitespace cleanup on text.&quot;&quot;&quot;</span>
+        <span class="n">output</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="k">for</span> <span class="n">char</span> <span class="ow">in</span> <span class="n">text</span><span class="p">:</span>
+            <span class="n">cp</span> <span class="o">=</span> <span class="nb">ord</span><span class="p">(</span><span class="n">char</span><span class="p">)</span>
+            <span class="k">if</span> <span class="n">cp</span> <span class="o">==</span> <span class="mi">0</span> <span class="ow">or</span> <span class="n">cp</span> <span class="o">==</span> <span class="mh">0xfffd</span> <span class="ow">or</span> <span class="n">_is_control</span><span class="p">(</span><span class="n">char</span><span class="p">):</span>
+                <span class="k">continue</span>
+            <span class="k">if</span> <span class="n">_is_whitespace</span><span class="p">(</span><span class="n">char</span><span class="p">):</span>
+                <span class="n">output</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="s2">&quot; &quot;</span><span class="p">)</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="n">output</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">char</span><span class="p">)</span>
+        <span class="k">return</span> <span class="s2">&quot;&quot;</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">output</span><span class="p">)</span>
+
+
+<span class="k">def</span> <span class="nf">_is_whitespace</span><span class="p">(</span><span class="n">char</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;Checks whether `chars` is a whitespace character.&quot;&quot;&quot;</span>
+    <span class="c1"># \t, \n, and \r are technically contorl characters but we treat them</span>
+    <span class="c1"># as whitespace since they are generally considered as such.</span>
+    <span class="k">if</span> <span class="n">char</span> <span class="o">==</span> <span class="s2">&quot; &quot;</span> <span class="ow">or</span> <span class="n">char</span> <span class="o">==</span> <span class="s2">&quot;</span><span class="se">\t</span><span class="s2">&quot;</span> <span class="ow">or</span> <span class="n">char</span> <span class="o">==</span> <span class="s2">&quot;</span><span class="se">\n</span><span class="s2">&quot;</span> <span class="ow">or</span> <span class="n">char</span> <span class="o">==</span> <span class="s2">&quot;</span><span class="se">\r</span><span class="s2">&quot;</span><span class="p">:</span>
+        <span class="k">return</span> <span class="kc">True</span>
+    <span class="n">cat</span> <span class="o">=</span> <span class="n">unicodedata</span><span class="o">.</span><span class="n">category</span><span class="p">(</span><span class="n">char</span><span class="p">)</span>
+    <span class="k">if</span> <span class="n">cat</span> <span class="o">==</span> <span class="s2">&quot;Zs&quot;</span><span class="p">:</span>
+        <span class="k">return</span> <span class="kc">True</span>
+    <span class="k">return</span> <span class="kc">False</span>
+
+
+<span class="k">def</span> <span class="nf">_is_control</span><span class="p">(</span><span class="n">char</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;Checks whether `chars` is a control character.&quot;&quot;&quot;</span>
+    <span class="c1"># These are technically control characters but we count them as whitespace</span>
+    <span class="c1"># characters.</span>
+    <span class="k">if</span> <span class="n">char</span> <span class="o">==</span> <span class="s2">&quot;</span><span class="se">\t</span><span class="s2">&quot;</span> <span class="ow">or</span> <span class="n">char</span> <span class="o">==</span> <span class="s2">&quot;</span><span class="se">\n</span><span class="s2">&quot;</span> <span class="ow">or</span> <span class="n">char</span> <span class="o">==</span> <span class="s2">&quot;</span><span class="se">\r</span><span class="s2">&quot;</span><span class="p">:</span>
+        <span class="k">return</span> <span class="kc">False</span>
+    <span class="n">cat</span> <span class="o">=</span> <span class="n">unicodedata</span><span class="o">.</span><span class="n">category</span><span class="p">(</span><span class="n">char</span><span class="p">)</span>
+    <span class="k">if</span> <span class="n">cat</span><span class="o">.</span><span class="n">startswith</span><span class="p">(</span><span class="s2">&quot;C&quot;</span><span class="p">):</span>
+        <span class="k">return</span> <span class="kc">True</span>
+    <span class="k">return</span> <span class="kc">False</span>
+
+
+<span class="k">def</span> <span class="nf">_is_punctuation</span><span class="p">(</span><span class="n">char</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;Checks whether `chars` is a punctuation character.&quot;&quot;&quot;</span>
+    <span class="n">cp</span> <span class="o">=</span> <span class="nb">ord</span><span class="p">(</span><span class="n">char</span><span class="p">)</span>
+    <span class="c1"># We treat all non-letter/number ASCII as punctuation.</span>
+    <span class="c1"># Characters such as &quot;^&quot;, &quot;$&quot;, and &quot;`&quot; are not in the Unicode</span>
+    <span class="c1"># Punctuation class but we treat them as punctuation anyways, for</span>
+    <span class="c1"># consistency.</span>
+    <span class="k">if</span> <span class="p">(((</span><span class="n">cp</span> <span class="o">&gt;=</span> <span class="mi">33</span><span class="p">)</span> <span class="ow">and</span> <span class="p">(</span><span class="n">cp</span> <span class="o">&lt;=</span> <span class="mi">47</span><span class="p">))</span> <span class="ow">or</span> <span class="p">((</span><span class="n">cp</span> <span class="o">&gt;=</span> <span class="mi">58</span><span class="p">)</span> <span class="ow">and</span> <span class="p">(</span><span class="n">cp</span> <span class="o">&lt;=</span> <span class="mi">64</span><span class="p">))</span> <span class="ow">or</span>
+       <span class="p">((</span><span class="n">cp</span> <span class="o">&gt;=</span> <span class="mi">91</span><span class="p">)</span> <span class="ow">and</span> <span class="p">(</span><span class="n">cp</span> <span class="o">&lt;=</span> <span class="mi">96</span><span class="p">))</span> <span class="ow">or</span> <span class="p">((</span><span class="n">cp</span> <span class="o">&gt;=</span> <span class="mi">123</span><span class="p">)</span> <span class="ow">and</span> <span class="p">(</span><span class="n">cp</span> <span class="o">&lt;=</span> <span class="mi">126</span><span class="p">))):</span>
+        <span class="k">return</span> <span class="kc">True</span>
+    <span class="n">cat</span> <span class="o">=</span> <span class="n">unicodedata</span><span class="o">.</span><span class="n">category</span><span class="p">(</span><span class="n">char</span><span class="p">)</span>
+    <span class="k">if</span> <span class="n">cat</span><span class="o">.</span><span class="n">startswith</span><span class="p">(</span><span class="s2">&quot;P&quot;</span><span class="p">):</span>
+        <span class="k">return</span> <span class="kc">True</span>
+    <span class="k">return</span> <span class="kc">False</span>
+
+
+<span class="k">class</span> <span class="nc">BertTokenizer</span><span class="p">(</span><span class="nb">object</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;Runs end-to-end tokenization: punctuation splitting + wordpiece&quot;&quot;&quot;</span>
+
+    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">vocab_file</span><span class="p">,</span> <span class="n">do_lower_case</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">max_len</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">do_basic_tokenize</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
+                 <span class="n">never_split</span><span class="o">=</span><span class="p">(</span><span class="s2">&quot;[UNK]&quot;</span><span class="p">,</span> <span class="s2">&quot;[SEP]&quot;</span><span class="p">,</span> <span class="s2">&quot;[PAD]&quot;</span><span class="p">,</span> <span class="s2">&quot;[CLS]&quot;</span><span class="p">,</span> <span class="s2">&quot;[MASK]&quot;</span><span class="p">)):</span>
+        <span class="sd">&quot;&quot;&quot;Constructs a BertTokenizer.</span>
+
+<span class="sd">        Args:</span>
+<span class="sd">          vocab_file: Path to a one-wordpiece-per-line vocabulary file</span>
+<span class="sd">          do_lower_case: Whether to lower case the input</span>
+<span class="sd">                         Only has an effect when do_wordpiece_only=False</span>
+<span class="sd">          do_basic_tokenize: Whether to do basic tokenization before wordpiece.</span>
+<span class="sd">          max_len: An artificial maximum length to truncate tokenized sequences to;</span>
+<span class="sd">                         Effective maximum length is always the minimum of this</span>
+<span class="sd">                         value (if specified) and the underlying BERT model&#39;s</span>
+<span class="sd">                         sequence length.</span>
+<span class="sd">          never_split: List of tokens which will never be split during tokenization.</span>
+<span class="sd">                         Only has an effect when do_wordpiece_only=False</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">isfile</span><span class="p">(</span><span class="n">vocab_file</span><span class="p">):</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span>
+                <span class="s2">&quot;Can&#39;t find a vocabulary file at path &#39;</span><span class="si">{}</span><span class="s2">&#39;. To load the vocabulary from a Google pretrained &quot;</span>
+                <span class="s2">&quot;model use `tokenizer = BertTokenizer.from_pretrained(PRETRAINED_MODEL_NAME)`&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">vocab_file</span><span class="p">))</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">vocab</span> <span class="o">=</span> <span class="n">load_vocab</span><span class="p">(</span><span class="n">vocab_file</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">ids_to_tokens</span> <span class="o">=</span> <span class="n">collections</span><span class="o">.</span><span class="n">OrderedDict</span><span class="p">(</span>
+            <span class="p">[(</span><span class="n">ids</span><span class="p">,</span> <span class="n">tok</span><span class="p">)</span> <span class="k">for</span> <span class="n">tok</span><span class="p">,</span> <span class="n">ids</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">vocab</span><span class="o">.</span><span class="n">items</span><span class="p">()])</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">do_basic_tokenize</span> <span class="o">=</span> <span class="n">do_basic_tokenize</span>
+        <span class="k">if</span> <span class="n">do_basic_tokenize</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">basic_tokenizer</span> <span class="o">=</span> <span class="n">BasicTokenizer</span><span class="p">(</span><span class="n">do_lower_case</span><span class="o">=</span><span class="n">do_lower_case</span><span class="p">,</span>
+                                                  <span class="n">never_split</span><span class="o">=</span><span class="n">never_split</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">wordpiece_tokenizer</span> <span class="o">=</span> <span class="n">WordpieceTokenizer</span><span class="p">(</span><span class="n">vocab</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">vocab</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">max_len</span> <span class="o">=</span> <span class="n">max_len</span> <span class="k">if</span> <span class="n">max_len</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="k">else</span> <span class="nb">int</span><span class="p">(</span><span class="mf">1e12</span><span class="p">)</span>
+
+    <span class="k">def</span> <span class="nf">_reinit_on_new_vocab</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">vocab</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        在load bert之后，可能会对vocab进行重新排列。重新排列之后调用这个函数重新初始化与vocab相关的性质</span>
+
+<span class="sd">        :param vocab:</span>
+<span class="sd">        :return:</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">vocab</span> <span class="o">=</span> <span class="n">vocab</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">wordpiece_tokenizer</span> <span class="o">=</span> <span class="n">WordpieceTokenizer</span><span class="p">(</span><span class="n">vocab</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">vocab</span><span class="p">)</span>
+
+    <span class="k">def</span> <span class="nf">tokenize</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">text</span><span class="p">):</span>
+        <span class="n">split_tokens</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">do_basic_tokenize</span><span class="p">:</span>
+            <span class="k">for</span> <span class="n">token</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">basic_tokenizer</span><span class="o">.</span><span class="n">tokenize</span><span class="p">(</span><span class="n">text</span><span class="p">):</span>
+                <span class="k">for</span> <span class="n">sub_token</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">wordpiece_tokenizer</span><span class="o">.</span><span class="n">tokenize</span><span class="p">(</span><span class="n">token</span><span class="p">):</span>
+                    <span class="n">split_tokens</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">sub_token</span><span class="p">)</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">split_tokens</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">wordpiece_tokenizer</span><span class="o">.</span><span class="n">tokenize</span><span class="p">(</span><span class="n">text</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">split_tokens</span>
+
+    <span class="k">def</span> <span class="nf">convert_tokens_to_ids</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">tokens</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Converts a sequence of tokens into ids using the vocab.&quot;&quot;&quot;</span>
+        <span class="n">ids</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="k">for</span> <span class="n">token</span> <span class="ow">in</span> <span class="n">tokens</span><span class="p">:</span>
+            <span class="n">ids</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">vocab</span><span class="p">[</span><span class="n">token</span><span class="p">])</span>
+        <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">ids</span><span class="p">)</span> <span class="o">&gt;</span> <span class="bp">self</span><span class="o">.</span><span class="n">max_len</span><span class="p">:</span>
+            <span class="n">logger</span><span class="o">.</span><span class="n">warning</span><span class="p">(</span>
+                <span class="s2">&quot;Token indices sequence length is longer than the specified maximum &quot;</span>
+                <span class="s2">&quot; sequence length for this BERT model (</span><span class="si">{}</span><span class="s2"> &gt; </span><span class="si">{}</span><span class="s2">). Running this&quot;</span>
+                <span class="s2">&quot; sequence through BERT will result in indexing errors&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">ids</span><span class="p">),</span> <span class="bp">self</span><span class="o">.</span><span class="n">max_len</span><span class="p">)</span>
+            <span class="p">)</span>
+        <span class="k">return</span> <span class="n">ids</span>
+
+    <span class="k">def</span> <span class="nf">convert_ids_to_tokens</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">ids</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Converts a sequence of ids in wordpiece tokens using the vocab.&quot;&quot;&quot;</span>
+        <span class="n">tokens</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="n">ids</span><span class="p">:</span>
+            <span class="n">tokens</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">ids_to_tokens</span><span class="p">[</span><span class="n">i</span><span class="p">])</span>
+        <span class="k">return</span> <span class="n">tokens</span>
+
+    <span class="k">def</span> <span class="nf">save_vocabulary</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">vocab_path</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Save the tokenizer vocabulary to a directory or file.&quot;&quot;&quot;</span>
+        <span class="n">index</span> <span class="o">=</span> <span class="mi">0</span>
+        <span class="k">if</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">isdir</span><span class="p">(</span><span class="n">vocab_path</span><span class="p">):</span>
+            <span class="n">vocab_file</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">vocab_path</span><span class="p">,</span> <span class="n">VOCAB_NAME</span><span class="p">)</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">vocab_file</span> <span class="o">=</span> <span class="n">vocab_path</span>
+        <span class="k">with</span> <span class="nb">open</span><span class="p">(</span><span class="n">vocab_file</span><span class="p">,</span> <span class="s2">&quot;w&quot;</span><span class="p">,</span> <span class="n">encoding</span><span class="o">=</span><span class="s2">&quot;utf-8&quot;</span><span class="p">)</span> <span class="k">as</span> <span class="n">writer</span><span class="p">:</span>
+            <span class="k">for</span> <span class="n">token</span><span class="p">,</span> <span class="n">token_index</span> <span class="ow">in</span> <span class="nb">sorted</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">vocab</span><span class="o">.</span><span class="n">items</span><span class="p">(),</span> <span class="n">key</span><span class="o">=</span><span class="k">lambda</span> <span class="n">kv</span><span class="p">:</span> <span class="n">kv</span><span class="p">[</span><span class="mi">1</span><span class="p">]):</span>
+                <span class="k">if</span> <span class="n">index</span> <span class="o">!=</span> <span class="n">token_index</span><span class="p">:</span>
+                    <span class="n">logger</span><span class="o">.</span><span class="n">warning</span><span class="p">(</span><span class="s2">&quot;Saving vocabulary to </span><span class="si">{}</span><span class="s2">: vocabulary indices are not consecutive.&quot;</span>
+                                   <span class="s2">&quot; Please check that the vocabulary is not corrupted!&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">vocab_file</span><span class="p">))</span>
+                    <span class="n">index</span> <span class="o">=</span> <span class="n">token_index</span>
+                <span class="n">writer</span><span class="o">.</span><span class="n">write</span><span class="p">(</span><span class="n">token</span> <span class="o">+</span> <span class="sa">u</span><span class="s1">&#39;</span><span class="se">\n</span><span class="s1">&#39;</span><span class="p">)</span>
+                <span class="n">index</span> <span class="o">+=</span> <span class="mi">1</span>
+        <span class="k">return</span> <span class="n">vocab_file</span>
+
+    <span class="nd">@classmethod</span>
+    <span class="k">def</span> <span class="nf">from_pretrained</span><span class="p">(</span><span class="bp">cls</span><span class="p">,</span> <span class="n">model_dir_or_name</span><span class="p">,</span> <span class="o">*</span><span class="n">inputs</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        给定模型的名字或者路径，直接读取vocab.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">model_dir</span> <span class="o">=</span> <span class="n">_get_bert_dir</span><span class="p">(</span><span class="n">model_dir_or_name</span><span class="p">)</span>
+        <span class="n">pretrained_model_name_or_path</span> <span class="o">=</span> <span class="n">_get_file_name_base_on_postfix</span><span class="p">(</span><span class="n">model_dir</span><span class="p">,</span> <span class="s1">&#39;.txt&#39;</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">model_dir_or_name</span><span class="o">.</span><span class="n">lower</span><span class="p">()</span> <span class="ow">in</span> <span class="n">PRETRAINED_BERT_MODEL_DIR</span><span class="p">:</span>
+            <span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="s2">&quot;loading vocabulary file </span><span class="si">{}</span><span class="s2">&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">pretrained_model_name_or_path</span><span class="p">))</span>
+        <span class="n">max_len</span> <span class="o">=</span> <span class="mi">512</span>
+        <span class="n">kwargs</span><span class="p">[</span><span class="s1">&#39;max_len&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="nb">min</span><span class="p">(</span><span class="n">kwargs</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s1">&#39;max_position_embeddings&#39;</span><span class="p">,</span> <span class="nb">int</span><span class="p">(</span><span class="mf">1e12</span><span class="p">)),</span> <span class="n">max_len</span><span class="p">)</span>
+        <span class="c1"># Instantiate tokenizer.</span>
+        <span class="n">tokenizer</span> <span class="o">=</span> <span class="bp">cls</span><span class="p">(</span><span class="n">pretrained_model_name_or_path</span><span class="p">,</span> <span class="o">*</span><span class="n">inputs</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">tokenizer</span>
+
+
+<span class="k">class</span> <span class="nc">_WordPieceBertModel</span><span class="p">(</span><span class="n">nn</span><span class="o">.</span><span class="n">Module</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    这个模块用于直接计算word_piece的结果.</span>
+
+<span class="sd">    &quot;&quot;&quot;</span>
+
+    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">model_dir_or_name</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">layers</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s1">&#39;-1&#39;</span><span class="p">,</span> <span class="n">pooled_cls</span><span class="p">:</span> <span class="nb">bool</span><span class="o">=</span><span class="kc">False</span><span class="p">):</span>
+        <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="fm">__init__</span><span class="p">()</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">tokenzier</span> <span class="o">=</span> <span class="n">BertTokenizer</span><span class="o">.</span><span class="n">from_pretrained</span><span class="p">(</span><span class="n">model_dir_or_name</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">encoder</span> <span class="o">=</span> <span class="n">BertModel</span><span class="o">.</span><span class="n">from_pretrained</span><span class="p">(</span><span class="n">model_dir_or_name</span><span class="p">)</span>
+        <span class="c1">#  检查encoder_layer_number是否合理</span>
+        <span class="n">encoder_layer_number</span> <span class="o">=</span> <span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">encoder</span><span class="o">.</span><span class="n">encoder</span><span class="o">.</span><span class="n">layer</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">layers</span> <span class="o">=</span> <span class="nb">list</span><span class="p">(</span><span class="nb">map</span><span class="p">(</span><span class="nb">int</span><span class="p">,</span> <span class="n">layers</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="s1">&#39;,&#39;</span><span class="p">)))</span>
+        <span class="k">for</span> <span class="n">layer</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">layers</span><span class="p">:</span>
+            <span class="k">if</span> <span class="n">layer</span> <span class="o">&lt;</span> <span class="mi">0</span><span class="p">:</span>
+                <span class="k">assert</span> <span class="o">-</span><span class="n">layer</span> <span class="o">&lt;=</span> <span class="n">encoder_layer_number</span><span class="p">,</span> <span class="n">f</span><span class="s2">&quot;The layer index:</span><span class="si">{layer}</span><span class="s2"> is out of scope for &quot;</span> \
+                    <span class="n">f</span><span class="s2">&quot;a bert model with </span><span class="si">{encoder_layer_number}</span><span class="s2"> layers.&quot;</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="k">assert</span> <span class="n">layer</span> <span class="o">&lt;</span> <span class="n">encoder_layer_number</span><span class="p">,</span> <span class="n">f</span><span class="s2">&quot;The layer index:</span><span class="si">{layer}</span><span class="s2"> is out of scope for &quot;</span> \
+                    <span class="n">f</span><span class="s2">&quot;a bert model with </span><span class="si">{encoder_layer_number}</span><span class="s2"> layers.&quot;</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">_cls_index</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">tokenzier</span><span class="o">.</span><span class="n">vocab</span><span class="p">[</span><span class="s1">&#39;[CLS]&#39;</span><span class="p">]</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_sep_index</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">tokenzier</span><span class="o">.</span><span class="n">vocab</span><span class="p">[</span><span class="s1">&#39;[SEP]&#39;</span><span class="p">]</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_wordpiece_unknown_index</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">tokenzier</span><span class="o">.</span><span class="n">vocab</span><span class="p">[</span><span class="s1">&#39;[UNK]&#39;</span><span class="p">]</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_wordpiece_pad_index</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">tokenzier</span><span class="o">.</span><span class="n">vocab</span><span class="p">[</span><span class="s1">&#39;[PAD]&#39;</span><span class="p">]</span>  <span class="c1"># 需要用于生成word_piece</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">pooled_cls</span> <span class="o">=</span> <span class="n">pooled_cls</span>
+
+    <span class="k">def</span> <span class="nf">index_dataset</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">*</span><span class="n">datasets</span><span class="p">,</span> <span class="n">field_name</span><span class="p">,</span> <span class="n">add_cls_sep</span><span class="o">=</span><span class="kc">True</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        使用bert的tokenizer新生成word_pieces列加入到datasets中，并将他们设置为input。如果首尾不是</span>
+<span class="sd">            [CLS]与[SEP]会在首尾额外加入[CLS]与[SEP], 且将word_pieces这一列的pad value设置为了bert的pad value。</span>
+
+<span class="sd">        :param datasets: DataSet对象</span>
+<span class="sd">        :param field_name: 基于哪一列index</span>
+<span class="sd">        :return:</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+
+        <span class="k">def</span> <span class="nf">convert_words_to_word_pieces</span><span class="p">(</span><span class="n">words</span><span class="p">):</span>
+            <span class="n">word_pieces</span> <span class="o">=</span> <span class="p">[]</span>
+            <span class="k">for</span> <span class="n">word</span> <span class="ow">in</span> <span class="n">words</span><span class="p">:</span>
+                <span class="n">tokens</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">tokenzier</span><span class="o">.</span><span class="n">wordpiece_tokenizer</span><span class="o">.</span><span class="n">tokenize</span><span class="p">(</span><span class="n">word</span><span class="p">)</span>
+                <span class="n">word_piece_ids</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">tokenzier</span><span class="o">.</span><span class="n">convert_tokens_to_ids</span><span class="p">(</span><span class="n">tokens</span><span class="p">)</span>
+                <span class="n">word_pieces</span><span class="o">.</span><span class="n">extend</span><span class="p">(</span><span class="n">word_piece_ids</span><span class="p">)</span>
+            <span class="k">if</span> <span class="n">add_cls_sep</span><span class="p">:</span>
+                <span class="k">if</span> <span class="n">word_pieces</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="o">!=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_cls_index</span><span class="p">:</span>
+                    <span class="n">word_pieces</span><span class="o">.</span><span class="n">insert</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">_cls_index</span><span class="p">)</span>
+                <span class="k">if</span> <span class="n">word_pieces</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span> <span class="o">!=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_sep_index</span><span class="p">:</span>
+                    <span class="n">word_pieces</span><span class="o">.</span><span class="n">insert</span><span class="p">(</span><span class="o">-</span><span class="mi">1</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">_sep_index</span><span class="p">)</span>
+            <span class="k">return</span> <span class="n">word_pieces</span>
+
+        <span class="k">for</span> <span class="n">index</span><span class="p">,</span> <span class="n">dataset</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">datasets</span><span class="p">):</span>
+            <span class="k">try</span><span class="p">:</span>
+                <span class="n">dataset</span><span class="o">.</span><span class="n">apply_field</span><span class="p">(</span><span class="n">convert_words_to_word_pieces</span><span class="p">,</span> <span class="n">field_name</span><span class="o">=</span><span class="n">field_name</span><span class="p">,</span> <span class="n">new_field_name</span><span class="o">=</span><span class="s1">&#39;word_pieces&#39;</span><span class="p">,</span>
+                                    <span class="n">is_input</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+                <span class="n">dataset</span><span class="o">.</span><span class="n">set_pad_val</span><span class="p">(</span><span class="s1">&#39;word_pieces&#39;</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">_wordpiece_pad_index</span><span class="p">)</span>
+            <span class="k">except</span> <span class="ne">Exception</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
+                <span class="n">logger</span><span class="o">.</span><span class="n">error</span><span class="p">(</span><span class="n">f</span><span class="s2">&quot;Exception happens when processing the </span><span class="si">{index}</span><span class="s2"> dataset.&quot;</span><span class="p">)</span>
+                <span class="k">raise</span> <span class="n">e</span>
+
+    <span class="k">def</span> <span class="nf">forward</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">word_pieces</span><span class="p">,</span> <span class="n">token_type_ids</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+
+<span class="sd">        :param word_pieces: torch.LongTensor, batch_size x max_len</span>
+<span class="sd">        :param token_type_ids: torch.LongTensor, batch_size x max_len</span>
+<span class="sd">        :return: num_layers x batch_size x max_len x hidden_size或者num_layers x batch_size x (max_len+2) x hidden_size</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">batch_size</span><span class="p">,</span> <span class="n">max_len</span> <span class="o">=</span> <span class="n">word_pieces</span><span class="o">.</span><span class="n">size</span><span class="p">()</span>
+
+        <span class="n">attn_masks</span> <span class="o">=</span> <span class="n">word_pieces</span><span class="o">.</span><span class="n">ne</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_wordpiece_pad_index</span><span class="p">)</span>
+        <span class="n">bert_outputs</span><span class="p">,</span> <span class="n">pooled_cls</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">encoder</span><span class="p">(</span><span class="n">word_pieces</span><span class="p">,</span> <span class="n">token_type_ids</span><span class="o">=</span><span class="n">token_type_ids</span><span class="p">,</span> <span class="n">attention_mask</span><span class="o">=</span><span class="n">attn_masks</span><span class="p">,</span>
+                                                <span class="n">output_all_encoded_layers</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+        <span class="c1"># output_layers = [self.layers]  # len(self.layers) x batch_size x max_word_piece_length x hidden_size</span>
+        <span class="n">outputs</span> <span class="o">=</span> <span class="n">bert_outputs</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">new_zeros</span><span class="p">((</span><span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">layers</span><span class="p">),</span> <span class="n">batch_size</span><span class="p">,</span> <span class="n">max_len</span><span class="p">,</span> <span class="n">bert_outputs</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">size</span><span class="p">(</span><span class="o">-</span><span class="mi">1</span><span class="p">)))</span>
+        <span class="k">for</span> <span class="n">l_index</span><span class="p">,</span> <span class="n">l</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">layers</span><span class="p">):</span>
+            <span class="n">bert_output</span> <span class="o">=</span> <span class="n">bert_outputs</span><span class="p">[</span><span class="n">l</span><span class="p">]</span>
+            <span class="k">if</span> <span class="n">l</span> <span class="ow">in</span> <span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">bert_outputs</span><span class="p">)</span><span class="o">-</span><span class="mi">1</span><span class="p">,</span> <span class="o">-</span><span class="mi">1</span><span class="p">)</span> <span class="ow">and</span> <span class="bp">self</span><span class="o">.</span><span class="n">pooled_cls</span><span class="p">:</span>
+                <span class="n">bert_output</span><span class="p">[:,</span> <span class="mi">0</span><span class="p">]</span> <span class="o">=</span> <span class="n">pooled_cls</span>
+            <span class="n">outputs</span><span class="p">[</span><span class="n">l_index</span><span class="p">]</span> <span class="o">=</span> <span class="n">bert_output</span>
+        <span class="k">return</span> <span class="n">outputs</span>
+</pre></div>
+
+           </div>
+           
+          </div>
+          <footer>
+  
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>
+        
+        &copy; 版权所有 2020, fastHan
+
+    </p>
+  </div>
+    
+    
+    
+    Built with <a href="http://sphinx-doc.org/">Sphinx</a> using a
+    
+    <a href="https://github.com/rtfd/sphinx_rtd_theme">theme</a>
+    
+    provided by <a href="https://readthedocs.org">Read the Docs</a>. 
+
+</footer>
+
+        </div>
+      </div>
+
+    </section>
+
+  </div>
+  
+
+  <script type="text/javascript">
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script>
+
+  
+  
+    
+   
+
+</body>
+</html>

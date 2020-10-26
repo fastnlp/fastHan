@@ -1,0 +1,338 @@
+
+
+<!DOCTYPE html>
+<html class="writer-html4" lang="zh-CN" >
+<head>
+  <meta charset="utf-8">
+  
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  
+  <title>fastHan package &mdash; fastHan 0.5.0 文档</title>
+  
+
+  
+  <link rel="stylesheet" href="_static/css/theme.css" type="text/css" />
+  <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
+
+  
+  
+  
+  
+
+  
+  <!--[if lt IE 9]>
+    <script src="_static/js/html5shiv.min.js"></script>
+  <![endif]-->
+  
+    
+      <script type="text/javascript" id="documentation_options" data-url_root="./" src="_static/documentation_options.js"></script>
+        <script type="text/javascript" src="_static/jquery.js"></script>
+        <script type="text/javascript" src="_static/underscore.js"></script>
+        <script type="text/javascript" src="_static/doctools.js"></script>
+        <script type="text/javascript" src="_static/language_data.js"></script>
+        <script type="text/javascript" src="_static/translations.js"></script>
+        <script async="async" type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.5/latest.js?config=TeX-AMS-MML_HTMLorMML"></script>
+    
+    <script type="text/javascript" src="_static/js/theme.js"></script>
+
+    
+    <link rel="index" title="索引" href="genindex.html" />
+    <link rel="search" title="搜索" href="search.html" /> 
+</head>
+
+<body class="wy-body-for-nav">
+
+   
+  <div class="wy-grid-for-nav">
+    
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+          
+
+          
+            <a href="index.html" class="icon icon-home" alt="Documentation Home"> fastHan
+          
+
+          
+          </a>
+
+          
+            
+            
+              <div class="version">
+                0.5.0
+              </div>
+            
+          
+
+          
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+
+          
+        </div>
+
+        
+        <div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="main navigation">
+          
+            
+            
+              
+            
+            
+              <ul>
+<li class="toctree-l1"><a class="reference internal" href="user/example.html"> 语法样例</a></li>
+</ul>
+
+            
+          
+        </div>
+        
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap">
+
+      
+      <nav class="wy-nav-top" aria-label="top navigation">
+        
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="index.html">fastHan</a>
+        
+      </nav>
+
+
+      <div class="wy-nav-content">
+        
+        <div class="rst-content">
+        
+          
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<div role="navigation" aria-label="breadcrumbs navigation">
+
+  <ul class="wy-breadcrumbs">
+    
+      <li><a href="index.html" class="icon icon-home"></a> &raquo;</li>
+        
+      <li>fastHan package</li>
+    
+    
+      <li class="wy-breadcrumbs-aside">
+        
+            
+            <a href="_sources/fastHan.rst.txt" rel="nofollow"> View page source</a>
+          
+        
+      </li>
+    
+  </ul>
+
+  
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+            
+  <div class="section" id="module-fastHan">
+<span id="fasthan-package"></span><h1>fastHan package<a class="headerlink" href="#module-fastHan" title="永久链接至标题">¶</a></h1>
+<dl class="class">
+<dt id="fastHan.Token">
+<em class="property">class </em><code class="descclassname">fastHan.</code><code class="descname">Token</code><span class="sig-paren">(</span><em>word</em>, <em>pos=None</em>, <em>head=None</em>, <em>head_label=None</em>, <em>ner=None</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/fastHan/FastModel.html#Token"><span class="viewcode-link">[源代码]</span></a><a class="headerlink" href="#fastHan.Token" title="永久链接至目标">¶</a></dt>
+<dd><p>基类：<code class="xref py py-class docutils literal notranslate"><span class="pre">object</span></code></p>
+<p>定义Token类。Token是fastHan输出的Sentence的组成单位，每个Token都代表一个被分好的词。
+它的属性则代表了它的词性、依存分析等信息。如果不包含此信息则为None。
+其中，word属性代表原词字符串；pos属性代表词性信息；head属性代表依存弧的指向（root为0，原句中的词，序号从1开始）；    head_label属性代表依存弧的标签；ner属性代表该词实体属性</p>
+<dl class="method">
+<dt id="fastHan.Token.__init__">
+<code class="descname">__init__</code><span class="sig-paren">(</span><em>word</em>, <em>pos=None</em>, <em>head=None</em>, <em>head_label=None</em>, <em>ner=None</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/fastHan/FastModel.html#Token.__init__"><span class="viewcode-link">[源代码]</span></a><a class="headerlink" href="#fastHan.Token.__init__" title="永久链接至目标">¶</a></dt>
+<dd><p>Initialize self.  See help(type(self)) for accurate signature.</p>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="class">
+<dt id="fastHan.Sentence">
+<em class="property">class </em><code class="descclassname">fastHan.</code><code class="descname">Sentence</code><span class="sig-paren">(</span><em>answer_list</em>, <em>target</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/fastHan/FastModel.html#Sentence"><span class="viewcode-link">[源代码]</span></a><a class="headerlink" href="#fastHan.Sentence" title="永久链接至目标">¶</a></dt>
+<dd><p>基类：<code class="xref py py-class docutils literal notranslate"><span class="pre">object</span></code></p>
+<p>定义Sentence类。FastHan处理句子后会输出由Sentence组成的列表。
+Sentence由Token组成，可以用索引访问其中的Token。</p>
+<dl class="method">
+<dt id="fastHan.Sentence.__init__">
+<code class="descname">__init__</code><span class="sig-paren">(</span><em>answer_list</em>, <em>target</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/fastHan/FastModel.html#Sentence.__init__"><span class="viewcode-link">[源代码]</span></a><a class="headerlink" href="#fastHan.Sentence.__init__" title="永久链接至目标">¶</a></dt>
+<dd><p>Initialize self.  See help(type(self)) for accurate signature.</p>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="class">
+<dt id="fastHan.FastHan">
+<em class="property">class </em><code class="descclassname">fastHan.</code><code class="descname">FastHan</code><span class="sig-paren">(</span><em>model_type='base'</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/fastHan/FastModel.html#FastHan"><span class="viewcode-link">[源代码]</span></a><a class="headerlink" href="#fastHan.FastHan" title="永久链接至目标">¶</a></dt>
+<dd><p>基类：<code class="xref py py-class docutils literal notranslate"><span class="pre">object</span></code></p>
+<p>FastHan类封装了基于BERT的深度学习联合模型CharModel，可处理CWS、POS、NER、dependency parsing四项任务，这    四项任务共享参数。</p>
+<dl class="method">
+<dt id="fastHan.FastHan.__init__">
+<code class="descname">__init__</code><span class="sig-paren">(</span><em>model_type='base'</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/fastHan/FastModel.html#FastHan.__init__"><span class="viewcode-link">[源代码]</span></a><a class="headerlink" href="#fastHan.FastHan.__init__" title="永久链接至目标">¶</a></dt>
+<dd><p>初始化FastHan。包括获取模型参数目录，加载所需的词表、标签集，复制参数等。
+model_type共有base和large两种选择，分别是基于BERT前四层和前八层的模型。</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">参数:</th><td class="field-body"><strong>model_type</strong> (<em>str</em>) – 取值为’base’或’large’，决定模型的层数为4或8。</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="method">
+<dt id="fastHan.FastHan.add_user_dict">
+<code class="descname">add_user_dict</code><span class="sig-paren">(</span><em>dic</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/fastHan/FastModel.html#FastHan.add_user_dict"><span class="viewcode-link">[源代码]</span></a><a class="headerlink" href="#fastHan.FastHan.add_user_dict" title="永久链接至目标">¶</a></dt>
+<dd><p>为分词（CWS）任务添加用户词典。用户词典会在模型解码时根据词典改变标签序列的权重，令模型偏好根据用户词典进行解码。</p>
+<dl class="docutils">
+<dt>:param str,list dic:用户传入的词典，支持以下输入：</dt>
+<dd>1.str：词典文件的路径，词典文件中，每个词通过空格分隔。
+2.list：词典列表，列表中每个元素都是str形式的词。</dd>
+</dl>
+</dd></dl>
+
+<dl class="method">
+<dt id="fastHan.FastHan.remove_user_dict">
+<code class="descname">remove_user_dict</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/fastHan/FastModel.html#FastHan.remove_user_dict"><span class="viewcode-link">[源代码]</span></a><a class="headerlink" href="#fastHan.FastHan.remove_user_dict" title="永久链接至目标">¶</a></dt>
+<dd><p>移除当前的用户词典。</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="fastHan.FastHan.set_cws_style">
+<code class="descname">set_cws_style</code><span class="sig-paren">(</span><em>corpus</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/fastHan/FastModel.html#FastHan.set_cws_style"><span class="viewcode-link">[源代码]</span></a><a class="headerlink" href="#fastHan.FastHan.set_cws_style" title="永久链接至目标">¶</a></dt>
+<dd><p>分词风格，指的是训练模型中文分词模块的10个语料库，模型可以区分这10个语料库，        设置分词style为S即令模型认为现在正在处理S语料库的分词。所以分词style实际上是        与语料库的覆盖面、分词粒度相关的。</p>
+<p>:param str corpus:语料库可选的取值为’as’,’cityu’,’cnc’,’ctb’,’msr’,’pku’,’sxu’,’udc’,’wtb’,’zx’。默认值为’ctb’。</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="fastHan.FastHan.set_device">
+<code class="descname">set_device</code><span class="sig-paren">(</span><em>device</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/fastHan/FastModel.html#FastHan.set_device"><span class="viewcode-link">[源代码]</span></a><a class="headerlink" href="#fastHan.FastHan.set_device" title="永久链接至目标">¶</a></dt>
+<dd><p>调整模型至device。</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">参数:</th><td class="field-body"><strong>device:支持以下的输入</strong> (<em>str</em><em>,</em><em>torch.device</em><em>,</em><em>int</em>) – <p>1. str: [‘cpu’, ‘cuda’, ‘cuda:0’, ‘cuda:1’, …] 依次为’cpu’中, 可见的第一个GPU中, 可见的第一个GPU中,
+可见的第二个GPU中;</p>
+<ol class="arabic simple" start="2">
+<li>torch.device：将模型装载到torch.device上。</li>
+<li>int: 使用device_id为该值的gpu。</li>
+</ol>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="method">
+<dt id="fastHan.FastHan.set_user_dict_weight">
+<code class="descname">set_user_dict_weight</code><span class="sig-paren">(</span><em>weight=0.05</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/fastHan/FastModel.html#FastHan.set_user_dict_weight"><span class="viewcode-link">[源代码]</span></a><a class="headerlink" href="#fastHan.FastHan.set_user_dict_weight" title="永久链接至目标">¶</a></dt>
+<dd><p>设置词典分词结果对最终结果的影响程度。</p>
+<p>:param float weight:影响程度的权重，数值越大，分词结果越偏向于词典分词法。一般设为0.05-0.1即可有不错的结果。用户也可以自己构建dev set、test set来确定最适合自身任务的参数。</p>
+</dd></dl>
+
+</dd></dl>
+
+<div class="section" id="subpackages">
+<h2>Subpackages<a class="headerlink" href="#subpackages" title="永久链接至标题">¶</a></h2>
+<div class="toctree-wrapper compound">
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="fastHan.model.html">fastHan.model package</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="fastHan.model.html#submodules">Submodules</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="fastHan.model.BertCharParser.html">fastHan.model.BertCharParser module</a></li>
+<li class="toctree-l3"><a class="reference internal" href="fastHan.model.CharParser.html">fastHan.model.CharParser module</a></li>
+<li class="toctree-l3"><a class="reference internal" href="fastHan.model.UserDict.html">fastHan.model.UserDict module</a></li>
+<li class="toctree-l3"><a class="reference internal" href="fastHan.model.bert.html">fastHan.model.bert module</a></li>
+<li class="toctree-l3"><a class="reference internal" href="fastHan.model.bert_encoder_theseus.html">fastHan.model.bert_encoder_theseus module</a></li>
+<li class="toctree-l3"><a class="reference internal" href="fastHan.model.model.html">fastHan.model.model module</a></li>
+<li class="toctree-l3"><a class="reference internal" href="fastHan.model.old_fastNLP_bert.html">fastHan.model.old_fastNLP_bert module</a></li>
+<li class="toctree-l3"><a class="reference internal" href="fastHan.model.utils.html">fastHan.model.utils module</a></li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+</div>
+</div>
+<div class="section" id="submodules">
+<h2>Submodules<a class="headerlink" href="#submodules" title="永久链接至标题">¶</a></h2>
+<div class="toctree-wrapper compound">
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="fastHan.FastModel.html">fastHan.FastModel module</a></li>
+</ul>
+</div>
+</div>
+</div>
+
+
+           </div>
+           
+          </div>
+          <footer>
+  
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>
+        
+        &copy; 版权所有 2020, fastHan
+
+    </p>
+  </div>
+    
+    
+    
+    Built with <a href="http://sphinx-doc.org/">Sphinx</a> using a
+    
+    <a href="https://github.com/rtfd/sphinx_rtd_theme">theme</a>
+    
+    provided by <a href="https://readthedocs.org">Read the Docs</a>. 
+
+</footer>
+
+        </div>
+      </div>
+
+    </section>
+
+  </div>
+  
+
+  <script type="text/javascript">
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script>
+
+  
+  
+    
+   
+
+</body>
+</html>

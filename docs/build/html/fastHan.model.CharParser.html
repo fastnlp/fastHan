@@ -1,0 +1,340 @@
+
+
+<!DOCTYPE html>
+<html class="writer-html4" lang="zh-CN" >
+<head>
+  <meta charset="utf-8">
+  
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  
+  <title>fastHan.model.CharParser module &mdash; fastHan 0.5.0 文档</title>
+  
+
+  
+  <link rel="stylesheet" href="_static/css/theme.css" type="text/css" />
+  <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
+
+  
+  
+  
+  
+
+  
+  <!--[if lt IE 9]>
+    <script src="_static/js/html5shiv.min.js"></script>
+  <![endif]-->
+  
+    
+      <script type="text/javascript" id="documentation_options" data-url_root="./" src="_static/documentation_options.js"></script>
+        <script type="text/javascript" src="_static/jquery.js"></script>
+        <script type="text/javascript" src="_static/underscore.js"></script>
+        <script type="text/javascript" src="_static/doctools.js"></script>
+        <script type="text/javascript" src="_static/language_data.js"></script>
+        <script type="text/javascript" src="_static/translations.js"></script>
+        <script async="async" type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.5/latest.js?config=TeX-AMS-MML_HTMLorMML"></script>
+    
+    <script type="text/javascript" src="_static/js/theme.js"></script>
+
+    
+    <link rel="index" title="索引" href="genindex.html" />
+    <link rel="search" title="搜索" href="search.html" /> 
+</head>
+
+<body class="wy-body-for-nav">
+
+   
+  <div class="wy-grid-for-nav">
+    
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+          
+
+          
+            <a href="index.html" class="icon icon-home" alt="Documentation Home"> fastHan
+          
+
+          
+          </a>
+
+          
+            
+            
+              <div class="version">
+                0.5.0
+              </div>
+            
+          
+
+          
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+
+          
+        </div>
+
+        
+        <div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="main navigation">
+          
+            
+            
+              
+            
+            
+              <ul>
+<li class="toctree-l1"><a class="reference internal" href="user/example.html"> 语法样例</a></li>
+</ul>
+
+            
+          
+        </div>
+        
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap">
+
+      
+      <nav class="wy-nav-top" aria-label="top navigation">
+        
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="index.html">fastHan</a>
+        
+      </nav>
+
+
+      <div class="wy-nav-content">
+        
+        <div class="rst-content">
+        
+          
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<div role="navigation" aria-label="breadcrumbs navigation">
+
+  <ul class="wy-breadcrumbs">
+    
+      <li><a href="index.html" class="icon icon-home"></a> &raquo;</li>
+        
+      <li>fastHan.model.CharParser module</li>
+    
+    
+      <li class="wy-breadcrumbs-aside">
+        
+            
+            <a href="_sources/fastHan.model.CharParser.rst.txt" rel="nofollow"> View page source</a>
+          
+        
+      </li>
+    
+  </ul>
+
+  
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+            
+  <div class="section" id="module-fastHan.model.CharParser">
+<span id="fasthan-model-charparser-module"></span><h1>fastHan.model.CharParser module<a class="headerlink" href="#module-fastHan.model.CharParser" title="永久链接至标题">¶</a></h1>
+<dl class="class">
+<dt id="fastHan.model.CharParser.CharBiaffineParser">
+<em class="property">class </em><code class="descclassname">fastHan.model.CharParser.</code><code class="descname">CharBiaffineParser</code><span class="sig-paren">(</span><em>char_vocab_size</em>, <em>emb_dim</em>, <em>bigram_vocab_size</em>, <em>trigram_vocab_size</em>, <em>num_label</em>, <em>rnn_layers=3</em>, <em>rnn_hidden_size=800</em>, <em>arc_mlp_size=500</em>, <em>label_mlp_size=100</em>, <em>dropout=0.3</em>, <em>encoder='lstm'</em>, <em>use_greedy_infer=False</em>, <em>app_index=0</em>, <em>pre_chars_embed=None</em>, <em>pre_bigrams_embed=None</em>, <em>pre_trigrams_embed=None</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/fastHan/model/CharParser.html#CharBiaffineParser"><span class="viewcode-link">[源代码]</span></a><a class="headerlink" href="#fastHan.model.CharParser.CharBiaffineParser" title="永久链接至目标">¶</a></dt>
+<dd><p>基类：<code class="xref py py-class docutils literal notranslate"><span class="pre">fastNLP.models.biaffine_parser.BiaffineParser</span></code></p>
+<dl class="method">
+<dt id="fastHan.model.CharParser.CharBiaffineParser.__init__">
+<code class="descname">__init__</code><span class="sig-paren">(</span><em>char_vocab_size</em>, <em>emb_dim</em>, <em>bigram_vocab_size</em>, <em>trigram_vocab_size</em>, <em>num_label</em>, <em>rnn_layers=3</em>, <em>rnn_hidden_size=800</em>, <em>arc_mlp_size=500</em>, <em>label_mlp_size=100</em>, <em>dropout=0.3</em>, <em>encoder='lstm'</em>, <em>use_greedy_infer=False</em>, <em>app_index=0</em>, <em>pre_chars_embed=None</em>, <em>pre_bigrams_embed=None</em>, <em>pre_trigrams_embed=None</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/fastHan/model/CharParser.html#CharBiaffineParser.__init__"><span class="viewcode-link">[源代码]</span></a><a class="headerlink" href="#fastHan.model.CharParser.CharBiaffineParser.__init__" title="永久链接至目标">¶</a></dt>
+<dd><table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">参数:</th><td class="field-body"><ul class="first last simple">
+<li><strong>embed</strong> – 单词词典, 可以是 tuple, 包括(num_embedings, embedding_dim), 即
+embedding的大小和每个词的维度. 也可以传入 nn.Embedding 对象,
+此时就以传入的对象作为embedding</li>
+<li><strong>pos_vocab_size</strong> – part-of-speech 词典大小</li>
+<li><strong>pos_emb_dim</strong> – part-of-speech 向量维度</li>
+<li><strong>num_label</strong> – 边的类别个数</li>
+<li><strong>rnn_layers</strong> – rnn encoder的层数</li>
+<li><strong>rnn_hidden_size</strong> – rnn encoder 的隐状态维度</li>
+<li><strong>arc_mlp_size</strong> – 边预测的MLP维度</li>
+<li><strong>label_mlp_size</strong> – 类别预测的MLP维度</li>
+<li><strong>dropout</strong> – dropout概率.</li>
+<li><strong>encoder</strong> – encoder类别, 可选 (‘lstm’, ‘var-lstm’, ‘transformer’). Default: lstm</li>
+<li><strong>use_greedy_infer</strong> – 是否在inference时使用贪心算法.
+若 <code class="docutils literal notranslate"><span class="pre">False</span></code> , 使用更加精确但相对缓慢的MST算法. Default: <code class="docutils literal notranslate"><span class="pre">False</span></code></li>
+</ul>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="method">
+<dt id="fastHan.model.CharParser.CharBiaffineParser.forward">
+<code class="descname">forward</code><span class="sig-paren">(</span><em>chars</em>, <em>bigrams</em>, <em>trigrams</em>, <em>seq_lens</em>, <em>gold_heads=None</em>, <em>pre_chars=None</em>, <em>pre_bigrams=None</em>, <em>pre_trigrams=None</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/fastHan/model/CharParser.html#CharBiaffineParser.forward"><span class="viewcode-link">[源代码]</span></a><a class="headerlink" href="#fastHan.model.CharParser.CharBiaffineParser.forward" title="永久链接至目标">¶</a></dt>
+<dd><p>max_len是包含root的
+:param chars: batch_size x max_len
+:param ngrams: batch_size x max_len*ngram_per_char
+:param seq_lens: batch_size
+:param gold_heads: batch_size x max_len
+:param pre_chars: batch_size x max_len
+:param pre_ngrams: batch_size x max_len*ngram_per_char
+:return dict: parsing results</p>
+<blockquote>
+<div>arc_pred: [batch_size, seq_len, seq_len]
+label_pred: [batch_size, seq_len, seq_len]
+mask: [batch_size, seq_len]
+head_pred: [batch_size, seq_len] if gold_heads is not provided, predicting the heads</div></blockquote>
+</dd></dl>
+
+<dl class="staticmethod">
+<dt id="fastHan.model.CharParser.CharBiaffineParser.loss">
+<em class="property">static </em><code class="descname">loss</code><span class="sig-paren">(</span><em>arc_pred</em>, <em>label_pred</em>, <em>arc_true</em>, <em>label_true</em>, <em>mask</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/fastHan/model/CharParser.html#CharBiaffineParser.loss"><span class="viewcode-link">[源代码]</span></a><a class="headerlink" href="#fastHan.model.CharParser.CharBiaffineParser.loss" title="永久链接至目标">¶</a></dt>
+<dd><p>Compute loss.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">参数:</th><td class="field-body"><ul class="first simple">
+<li><strong>arc_pred</strong> – [batch_size, seq_len, seq_len]</li>
+<li><strong>label_pred</strong> – [batch_size, seq_len, n_tags]</li>
+<li><strong>arc_true</strong> – [batch_size, seq_len]</li>
+<li><strong>label_true</strong> – [batch_size, seq_len]</li>
+<li><strong>mask</strong> – [batch_size, seq_len]</li>
+</ul>
+</td>
+</tr>
+<tr class="field-even field"><th class="field-name">返回:</th><td class="field-body"><p class="first last">loss value</p>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="method">
+<dt id="fastHan.model.CharParser.CharBiaffineParser.predict">
+<code class="descname">predict</code><span class="sig-paren">(</span><em>chars</em>, <em>bigrams</em>, <em>trigrams</em>, <em>seq_lens</em>, <em>pre_chars</em>, <em>pre_bigrams</em>, <em>pre_trigrams</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/fastHan/model/CharParser.html#CharBiaffineParser.predict"><span class="viewcode-link">[源代码]</span></a><a class="headerlink" href="#fastHan.model.CharParser.CharBiaffineParser.predict" title="永久链接至目标">¶</a></dt>
+<dd><p>max_len是包含root的</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">参数:</th><td class="field-body"><ul class="first simple">
+<li><strong>chars</strong> – batch_size x max_len</li>
+<li><strong>ngrams</strong> – batch_size x max_len*ngram_per_char</li>
+<li><strong>seq_lens</strong> – batch_size</li>
+<li><strong>pre_chars</strong> – batch_size x max_len</li>
+<li><strong>pre_ngrams</strong> – batch_size x max_len*ngram_per_cha</li>
+</ul>
+</td>
+</tr>
+<tr class="field-even field"><th class="field-name">返回:</th><td class="field-body"><p class="first last"></p>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="method">
+<dt id="fastHan.model.CharParser.CharBiaffineParser.reset_parameters">
+<code class="descname">reset_parameters</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/fastHan/model/CharParser.html#CharBiaffineParser.reset_parameters"><span class="viewcode-link">[源代码]</span></a><a class="headerlink" href="#fastHan.model.CharParser.CharBiaffineParser.reset_parameters" title="永久链接至目标">¶</a></dt>
+<dd></dd></dl>
+
+</dd></dl>
+
+<dl class="class">
+<dt id="fastHan.model.CharParser.CharParser">
+<em class="property">class </em><code class="descclassname">fastHan.model.CharParser.</code><code class="descname">CharParser</code><span class="sig-paren">(</span><em>char_vocab_size</em>, <em>emb_dim</em>, <em>bigram_vocab_size</em>, <em>trigram_vocab_size</em>, <em>num_label</em>, <em>rnn_layers=3</em>, <em>rnn_hidden_size=400</em>, <em>arc_mlp_size=500</em>, <em>label_mlp_size=100</em>, <em>dropout=0.3</em>, <em>encoder='var-lstm'</em>, <em>use_greedy_infer=False</em>, <em>app_index=0</em>, <em>pre_chars_embed=None</em>, <em>pre_bigrams_embed=None</em>, <em>pre_trigrams_embed=None</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/fastHan/model/CharParser.html#CharParser"><span class="viewcode-link">[源代码]</span></a><a class="headerlink" href="#fastHan.model.CharParser.CharParser" title="永久链接至目标">¶</a></dt>
+<dd><p>基类：<code class="xref py py-class docutils literal notranslate"><span class="pre">torch.nn.modules.module.Module</span></code></p>
+<dl class="method">
+<dt id="fastHan.model.CharParser.CharParser.__init__">
+<code class="descname">__init__</code><span class="sig-paren">(</span><em>char_vocab_size</em>, <em>emb_dim</em>, <em>bigram_vocab_size</em>, <em>trigram_vocab_size</em>, <em>num_label</em>, <em>rnn_layers=3</em>, <em>rnn_hidden_size=400</em>, <em>arc_mlp_size=500</em>, <em>label_mlp_size=100</em>, <em>dropout=0.3</em>, <em>encoder='var-lstm'</em>, <em>use_greedy_infer=False</em>, <em>app_index=0</em>, <em>pre_chars_embed=None</em>, <em>pre_bigrams_embed=None</em>, <em>pre_trigrams_embed=None</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/fastHan/model/CharParser.html#CharParser.__init__"><span class="viewcode-link">[源代码]</span></a><a class="headerlink" href="#fastHan.model.CharParser.CharParser.__init__" title="永久链接至目标">¶</a></dt>
+<dd><p>Initializes internal Module state, shared by both nn.Module and ScriptModule.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="fastHan.model.CharParser.CharParser.forward">
+<code class="descname">forward</code><span class="sig-paren">(</span><em>chars</em>, <em>bigrams</em>, <em>trigrams</em>, <em>seq_lens</em>, <em>char_heads</em>, <em>char_labels</em>, <em>pre_chars=None</em>, <em>pre_bigrams=None</em>, <em>pre_trigrams=None</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/fastHan/model/CharParser.html#CharParser.forward"><span class="viewcode-link">[源代码]</span></a><a class="headerlink" href="#fastHan.model.CharParser.CharParser.forward" title="永久链接至目标">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="fastHan.model.CharParser.CharParser.predict">
+<code class="descname">predict</code><span class="sig-paren">(</span><em>chars</em>, <em>bigrams</em>, <em>trigrams</em>, <em>seq_lens</em>, <em>pre_chars=None</em>, <em>pre_bigrams=None</em>, <em>pre_trigrams=None</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/fastHan/model/CharParser.html#CharParser.predict"><span class="viewcode-link">[源代码]</span></a><a class="headerlink" href="#fastHan.model.CharParser.CharParser.predict" title="永久链接至目标">¶</a></dt>
+<dd></dd></dl>
+
+</dd></dl>
+
+<dl class="function">
+<dt id="fastHan.model.CharParser.drop_input_independent">
+<code class="descclassname">fastHan.model.CharParser.</code><code class="descname">drop_input_independent</code><span class="sig-paren">(</span><em>word_embeddings</em>, <em>dropout_emb</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/fastHan/model/CharParser.html#drop_input_independent"><span class="viewcode-link">[源代码]</span></a><a class="headerlink" href="#fastHan.model.CharParser.drop_input_independent" title="永久链接至目标">¶</a></dt>
+<dd></dd></dl>
+
+</div>
+
+
+           </div>
+           
+          </div>
+          <footer>
+  
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>
+        
+        &copy; 版权所有 2020, fastHan
+
+    </p>
+  </div>
+    
+    
+    
+    Built with <a href="http://sphinx-doc.org/">Sphinx</a> using a
+    
+    <a href="https://github.com/rtfd/sphinx_rtd_theme">theme</a>
+    
+    provided by <a href="https://readthedocs.org">Read the Docs</a>. 
+
+</footer>
+
+        </div>
+      </div>
+
+    </section>
+
+  </div>
+  
+
+  <script type="text/javascript">
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script>
+
+  
+  
+    
+   
+
+</body>
+</html>

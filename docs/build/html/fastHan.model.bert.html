@@ -1,0 +1,402 @@
+
+
+<!DOCTYPE html>
+<html class="writer-html4" lang="zh-CN" >
+<head>
+  <meta charset="utf-8">
+  
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  
+  <title>fastHan.model.bert module &mdash; fastHan 0.5.0 文档</title>
+  
+
+  
+  <link rel="stylesheet" href="_static/css/theme.css" type="text/css" />
+  <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
+
+  
+  
+  
+  
+
+  
+  <!--[if lt IE 9]>
+    <script src="_static/js/html5shiv.min.js"></script>
+  <![endif]-->
+  
+    
+      <script type="text/javascript" id="documentation_options" data-url_root="./" src="_static/documentation_options.js"></script>
+        <script type="text/javascript" src="_static/jquery.js"></script>
+        <script type="text/javascript" src="_static/underscore.js"></script>
+        <script type="text/javascript" src="_static/doctools.js"></script>
+        <script type="text/javascript" src="_static/language_data.js"></script>
+        <script type="text/javascript" src="_static/translations.js"></script>
+        <script async="async" type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.5/latest.js?config=TeX-AMS-MML_HTMLorMML"></script>
+    
+    <script type="text/javascript" src="_static/js/theme.js"></script>
+
+    
+    <link rel="index" title="索引" href="genindex.html" />
+    <link rel="search" title="搜索" href="search.html" /> 
+</head>
+
+<body class="wy-body-for-nav">
+
+   
+  <div class="wy-grid-for-nav">
+    
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+          
+
+          
+            <a href="index.html" class="icon icon-home" alt="Documentation Home"> fastHan
+          
+
+          
+          </a>
+
+          
+            
+            
+              <div class="version">
+                0.5.0
+              </div>
+            
+          
+
+          
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+
+          
+        </div>
+
+        
+        <div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="main navigation">
+          
+            
+            
+              
+            
+            
+              <ul>
+<li class="toctree-l1"><a class="reference internal" href="user/example.html"> 语法样例</a></li>
+</ul>
+
+            
+          
+        </div>
+        
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap">
+
+      
+      <nav class="wy-nav-top" aria-label="top navigation">
+        
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="index.html">fastHan</a>
+        
+      </nav>
+
+
+      <div class="wy-nav-content">
+        
+        <div class="rst-content">
+        
+          
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<div role="navigation" aria-label="breadcrumbs navigation">
+
+  <ul class="wy-breadcrumbs">
+    
+      <li><a href="index.html" class="icon icon-home"></a> &raquo;</li>
+        
+      <li>fastHan.model.bert module</li>
+    
+    
+      <li class="wy-breadcrumbs-aside">
+        
+            
+            <a href="_sources/fastHan.model.bert.rst.txt" rel="nofollow"> View page source</a>
+          
+        
+      </li>
+    
+  </ul>
+
+  
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+            
+  <div class="section" id="module-fastHan.model.bert">
+<span id="fasthan-model-bert-module"></span><h1>fastHan.model.bert module<a class="headerlink" href="#module-fastHan.model.bert" title="永久链接至标题">¶</a></h1>
+<dl class="class">
+<dt id="fastHan.model.bert.BertEmbedding">
+<em class="property">class </em><code class="descclassname">fastHan.model.bert.</code><code class="descname">BertEmbedding</code><span class="sig-paren">(</span><em>vocab: fastNLP.core.vocabulary.Vocabulary</em>, <em>model_dir_or_name: str = 'en-base-uncased'</em>, <em>layers: str = '-1'</em>, <em>pool_method: str = 'first'</em>, <em>word_dropout=0</em>, <em>dropout=0</em>, <em>include_cls_sep: bool = False</em>, <em>pooled_cls=True</em>, <em>requires_grad: bool = True</em>, <em>auto_truncate: bool = False</em>, <em>layer_num=12</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/fastHan/model/bert.html#BertEmbedding"><span class="viewcode-link">[源代码]</span></a><a class="headerlink" href="#fastHan.model.bert.BertEmbedding" title="永久链接至目标">¶</a></dt>
+<dd><p>基类：<code class="xref py py-class docutils literal notranslate"><span class="pre">fastNLP.embeddings.contextual_embedding.ContextualEmbedding</span></code></p>
+<p>使用BERT对words进行编码的Embedding。建议将输入的words长度限制在430以内，而不要使用512(根据预训练模型参数，可能有变化)。这是由于
+预训练的bert模型长度限制为512个token，而因为输入的word是未进行word piece分割的(word piece的分割有BertEmbedding在输入word
+时切分)，在分割之后长度可能会超过最大长度限制。</p>
+<p>BertEmbedding可以支持自动下载权重，当前支持的模型有以下的几种(待补充):</p>
+<p>Example:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="kn">import</span> <span class="nn">torch</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="kn">from</span> <span class="nn">fastNLP</span> <span class="k">import</span> <span class="n">Vocabulary</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="kn">from</span> <span class="nn">fastNLP.embeddings</span> <span class="k">import</span> <span class="n">BertEmbedding</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">vocab</span> <span class="o">=</span> <span class="n">Vocabulary</span><span class="p">()</span><span class="o">.</span><span class="n">add_word_lst</span><span class="p">(</span><span class="s2">&quot;The whether is good .&quot;</span><span class="o">.</span><span class="n">split</span><span class="p">())</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">embed</span> <span class="o">=</span> <span class="n">BertEmbedding</span><span class="p">(</span><span class="n">vocab</span><span class="p">,</span> <span class="n">model_dir_or_name</span><span class="o">=</span><span class="s1">&#39;en-base-uncased&#39;</span><span class="p">,</span> <span class="n">requires_grad</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">layers</span><span class="o">=</span><span class="s1">&#39;4,-2,-1&#39;</span><span class="p">)</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">words</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">LongTensor</span><span class="p">([[</span><span class="n">vocab</span><span class="o">.</span><span class="n">to_index</span><span class="p">(</span><span class="n">word</span><span class="p">)</span> <span class="k">for</span> <span class="n">word</span> <span class="ow">in</span> <span class="s2">&quot;The whether is good .&quot;</span><span class="o">.</span><span class="n">split</span><span class="p">()]])</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">outputs</span> <span class="o">=</span> <span class="n">embed</span><span class="p">(</span><span class="n">words</span><span class="p">)</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">outputs</span><span class="o">.</span><span class="n">size</span><span class="p">()</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="c1"># torch.Size([1, 5, 2304])</span>
+</pre></div>
+</div>
+<dl class="method">
+<dt id="fastHan.model.bert.BertEmbedding.__init__">
+<code class="descname">__init__</code><span class="sig-paren">(</span><em>vocab: fastNLP.core.vocabulary.Vocabulary</em>, <em>model_dir_or_name: str = 'en-base-uncased'</em>, <em>layers: str = '-1'</em>, <em>pool_method: str = 'first'</em>, <em>word_dropout=0</em>, <em>dropout=0</em>, <em>include_cls_sep: bool = False</em>, <em>pooled_cls=True</em>, <em>requires_grad: bool = True</em>, <em>auto_truncate: bool = False</em>, <em>layer_num=12</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/fastHan/model/bert.html#BertEmbedding.__init__"><span class="viewcode-link">[源代码]</span></a><a class="headerlink" href="#fastHan.model.bert.BertEmbedding.__init__" title="永久链接至目标">¶</a></dt>
+<dd><table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">参数:</th><td class="field-body"><ul class="first last simple">
+<li><strong>vocab</strong> (<em>Vocabulary</em>) – 词表</li>
+<li><strong>model_dir_or_name</strong> (<em>str</em>) – 模型所在目录或者模型的名称。当传入模型所在目录时，目录中应该包含一个词表文件(以.txt作为后缀名),
+权重文件(以.bin作为文件后缀名), 配置文件(以.json作为后缀名)。</li>
+<li><strong>layers</strong> (<em>str</em>) – 输出embedding表示来自于哪些层，不同层的结果按照layers中的顺序在最后一维concat起来。以’,’隔开层数，层的序号是
+从0开始，可以以负数去索引倒数几层。</li>
+<li><strong>pool_method</strong> (<em>str</em>) – 因为在bert中，每个word会被表示为多个word pieces, 当获取一个word的表示的时候，怎样从它的word pieces
+中计算得到它对应的表示。支持 <code class="docutils literal notranslate"><span class="pre">last</span></code> , <code class="docutils literal notranslate"><span class="pre">first</span></code> , <code class="docutils literal notranslate"><span class="pre">avg</span></code> , <code class="docutils literal notranslate"><span class="pre">max</span></code>。</li>
+<li><strong>word_dropout</strong> (<em>float</em>) – 以多大的概率将一个词替换为unk。这样既可以训练unk也是一定的regularize。</li>
+<li><strong>dropout</strong> (<em>float</em>) – 以多大的概率对embedding的表示进行Dropout。0.1即随机将10%的值置为0。</li>
+<li><strong>include_cls_sep</strong> (<em>bool</em>) – bool，在bert计算句子的表示的时候，需要在前面加上[CLS]和[SEP], 是否在结果中保留这两个内容。 这样
+会使得word embedding的结果比输入的结果长两个token。如果该值为True，则在使用 :class::StackEmbedding 可能会与其它类型的
+embedding长度不匹配。</li>
+<li><strong>pooled_cls</strong> (<em>bool</em>) – 返回的[CLS]是否使用预训练中的BertPool映射一下，仅在include_cls_sep时有效。如果下游任务只取[CLS]做预测，
+一般该值为True。</li>
+<li><strong>requires_grad</strong> (<em>bool</em>) – 是否需要gradient以更新Bert的权重。</li>
+<li><strong>auto_truncate</strong> (<em>bool</em>) – 当句子words拆分为word pieces长度超过bert最大允许长度(一般为512), 自动截掉拆分后的超过510个
+word pieces后的内容，并将第512个word piece置为[SEP]。超过长度的部分的encode结果直接全部置零。一般仅有只使用[CLS]
+来进行分类的任务将auto_truncate置为True。</li>
+</ul>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="method">
+<dt id="fastHan.model.bert.BertEmbedding.drop_word">
+<code class="descname">drop_word</code><span class="sig-paren">(</span><em>words</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/fastHan/model/bert.html#BertEmbedding.drop_word"><span class="viewcode-link">[源代码]</span></a><a class="headerlink" href="#fastHan.model.bert.BertEmbedding.drop_word" title="永久链接至目标">¶</a></dt>
+<dd><p>按照设定随机将words设置为unknown_index。</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">参数:</th><td class="field-body"><strong>words</strong> (<em>torch.LongTensor</em>) – batch_size x max_len</td>
+</tr>
+<tr class="field-even field"><th class="field-name">返回:</th><td class="field-body"></td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="method">
+<dt id="fastHan.model.bert.BertEmbedding.forward">
+<code class="descname">forward</code><span class="sig-paren">(</span><em>words</em>, <em>layers=None</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/fastHan/model/bert.html#BertEmbedding.forward"><span class="viewcode-link">[源代码]</span></a><a class="headerlink" href="#fastHan.model.bert.BertEmbedding.forward" title="永久链接至目标">¶</a></dt>
+<dd><dl class="docutils">
+<dt>计算words的bert embedding表示。计算之前会在每句话的开始增加[CLS]在结束增加[SEP], 并根据include_cls_sep判断要不要</dt>
+<dd>删除这两个token的表示。</dd>
+</dl>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">参数:</th><td class="field-body"><strong>words</strong> (<em>torch.LongTensor</em>) – [batch_size, max_len]</td>
+</tr>
+<tr class="field-even field"><th class="field-name">返回:</th><td class="field-body">torch.FloatTensor. batch_size x max_len x (768*len(self.layers))</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="class">
+<dt id="fastHan.model.bert.BertWordPieceEncoder">
+<em class="property">class </em><code class="descclassname">fastHan.model.bert.</code><code class="descname">BertWordPieceEncoder</code><span class="sig-paren">(</span><em>model_dir_or_name: str = 'en-base-uncased'</em>, <em>layers: str = '-1'</em>, <em>pooled_cls: bool = False</em>, <em>word_dropout=0</em>, <em>dropout=0</em>, <em>requires_grad: bool = True</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/fastHan/model/bert.html#BertWordPieceEncoder"><span class="viewcode-link">[源代码]</span></a><a class="headerlink" href="#fastHan.model.bert.BertWordPieceEncoder" title="永久链接至目标">¶</a></dt>
+<dd><p>基类：<code class="xref py py-class docutils literal notranslate"><span class="pre">torch.nn.modules.module.Module</span></code></p>
+<p>读取bert模型，读取之后调用index_dataset方法在dataset中生成word_pieces这一列。</p>
+<dl class="method">
+<dt id="fastHan.model.bert.BertWordPieceEncoder.__init__">
+<code class="descname">__init__</code><span class="sig-paren">(</span><em>model_dir_or_name: str = 'en-base-uncased'</em>, <em>layers: str = '-1'</em>, <em>pooled_cls: bool = False</em>, <em>word_dropout=0</em>, <em>dropout=0</em>, <em>requires_grad: bool = True</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/fastHan/model/bert.html#BertWordPieceEncoder.__init__"><span class="viewcode-link">[源代码]</span></a><a class="headerlink" href="#fastHan.model.bert.BertWordPieceEncoder.__init__" title="永久链接至目标">¶</a></dt>
+<dd><table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">参数:</th><td class="field-body"><ul class="first last simple">
+<li><strong>model_dir_or_name</strong> (<em>str</em>) – 模型所在目录或者模型的名称。默认值为 <code class="docutils literal notranslate"><span class="pre">en-base-uncased</span></code></li>
+<li><strong>layers</strong> (<em>str</em>) – 最终结果中的表示。以’,’隔开层数，可以以负数去索引倒数几层</li>
+<li><strong>pooled_cls</strong> (<em>bool</em>) – 返回的句子开头的[CLS]是否使用预训练中的BertPool映射一下，仅在include_cls_sep时有效。如果下游任务只取
+[CLS]做预测，一般该值为True。</li>
+<li><strong>word_dropout</strong> (<em>float</em>) – 以多大的概率将一个词替换为unk。这样既可以训练unk也是一定的regularize。</li>
+<li><strong>dropout</strong> (<em>float</em>) – 以多大的概率对embedding的表示进行Dropout。0.1即随机将10%的值置为0。</li>
+<li><strong>requires_grad</strong> (<em>bool</em>) – 是否需要gradient。</li>
+</ul>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="method">
+<dt id="fastHan.model.bert.BertWordPieceEncoder.drop_word">
+<code class="descname">drop_word</code><span class="sig-paren">(</span><em>words</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/fastHan/model/bert.html#BertWordPieceEncoder.drop_word"><span class="viewcode-link">[源代码]</span></a><a class="headerlink" href="#fastHan.model.bert.BertWordPieceEncoder.drop_word" title="永久链接至目标">¶</a></dt>
+<dd><p>按照设定随机将words设置为unknown_index。</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">参数:</th><td class="field-body"><strong>words</strong> (<em>torch.LongTensor</em>) – batch_size x max_len</td>
+</tr>
+<tr class="field-even field"><th class="field-name">返回:</th><td class="field-body"></td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="attribute">
+<dt id="fastHan.model.bert.BertWordPieceEncoder.embed_size">
+<code class="descname">embed_size</code><a class="headerlink" href="#fastHan.model.bert.BertWordPieceEncoder.embed_size" title="永久链接至目标">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attribute">
+<dt id="fastHan.model.bert.BertWordPieceEncoder.embedding_dim">
+<code class="descname">embedding_dim</code><a class="headerlink" href="#fastHan.model.bert.BertWordPieceEncoder.embedding_dim" title="永久链接至目标">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="fastHan.model.bert.BertWordPieceEncoder.forward">
+<code class="descname">forward</code><span class="sig-paren">(</span><em>word_pieces</em>, <em>token_type_ids=None</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/fastHan/model/bert.html#BertWordPieceEncoder.forward"><span class="viewcode-link">[源代码]</span></a><a class="headerlink" href="#fastHan.model.bert.BertWordPieceEncoder.forward" title="永久链接至目标">¶</a></dt>
+<dd><p>计算words的bert embedding表示。传入的words中应该自行包含[CLS]与[SEP]的tag。</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">参数:</th><td class="field-body"><ul class="first simple">
+<li><strong>words</strong> – batch_size x max_len</li>
+<li><strong>token_type_ids</strong> – batch_size x max_len, 用于区分前一句和后一句话. 如果不传入，则自动生成(大部分情况，都不需要输入),
+第一个[SEP]及之前为0, 第二个[SEP]及到第一个[SEP]之间为1; 第三个[SEP]及到第二个[SEP]之间为0，依次往后推。</li>
+</ul>
+</td>
+</tr>
+<tr class="field-even field"><th class="field-name">返回:</th><td class="field-body"><p class="first last">torch.FloatTensor. batch_size x max_len x (768*len(self.layers))</p>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="method">
+<dt id="fastHan.model.bert.BertWordPieceEncoder.index_datasets">
+<code class="descname">index_datasets</code><span class="sig-paren">(</span><em>*datasets</em>, <em>field_name</em>, <em>add_cls_sep=True</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/fastHan/model/bert.html#BertWordPieceEncoder.index_datasets"><span class="viewcode-link">[源代码]</span></a><a class="headerlink" href="#fastHan.model.bert.BertWordPieceEncoder.index_datasets" title="永久链接至目标">¶</a></dt>
+<dd><p>使用bert的tokenizer新生成word_pieces列加入到datasets中，并将他们设置为input,且将word_pieces这一列的pad value设置为了
+bert的pad value。</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">参数:</th><td class="field-body"><ul class="first simple">
+<li><strong>datasets</strong> (<em>DataSet</em>) – DataSet对象</li>
+<li><strong>field_name</strong> (<em>str</em>) – 基于哪一列的内容生成word_pieces列。这一列中每个数据应该是List[str]的形式。</li>
+<li><strong>add_cls_sep</strong> (<em>bool</em>) – 如果首尾不是[CLS]与[SEP]会在首尾额外加入[CLS]与[SEP]。</li>
+</ul>
+</td>
+</tr>
+<tr class="field-even field"><th class="field-name">返回:</th><td class="field-body"><p class="first last"></p>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="attribute">
+<dt id="fastHan.model.bert.BertWordPieceEncoder.num_embedding">
+<code class="descname">num_embedding</code><a class="headerlink" href="#fastHan.model.bert.BertWordPieceEncoder.num_embedding" title="永久链接至目标">¶</a></dt>
+<dd></dd></dl>
+
+</dd></dl>
+
+</div>
+
+
+           </div>
+           
+          </div>
+          <footer>
+  
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>
+        
+        &copy; 版权所有 2020, fastHan
+
+    </p>
+  </div>
+    
+    
+    
+    Built with <a href="http://sphinx-doc.org/">Sphinx</a> using a
+    
+    <a href="https://github.com/rtfd/sphinx_rtd_theme">theme</a>
+    
+    provided by <a href="https://readthedocs.org">Read the Docs</a>. 
+
+</footer>
+
+        </div>
+      </div>
+
+    </section>
+
+  </div>
+  
+
+  <script type="text/javascript">
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script>
+
+  
+  
+    
+   
+
+</body>
+</html>
