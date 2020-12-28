@@ -14,7 +14,7 @@ print(pkgs)
 
 setup(
     name='fastHan',
-    version='1.3',
+    version='1.5',
     url='https://github.com/fastnlp/fastHan',
     description=(
         '使用深度学习联合模型，解决中文分词、词性标注、依存分析、命名实体识别任务。'

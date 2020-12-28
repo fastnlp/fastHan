@@ -17,11 +17,15 @@ fastNLP>=0.5.0
 - 1.2版本的fastHan修复了fastNLP版本兼容问题。小于等于1.2版本的fastHan在输入句子的首尾包含**空格、换行**符时会产生BUG。如果字符串首尾包含上述字符，请使用 strip 函数处理输入字符串。
 - 1.3版本的fastHan自动对输入字符串做 strip 函数处理。
 - 1.4版本的fastHan加入用户词典功能（仅限于分词任务）
+- 1.5版本的fastHan
+  - 修正了Parsing任务中可能会出现的ValueError
+  - 修改结果的返回形式，默认以list的形式返回
+  - 可以通过url路径加载模型
 
 可执行如下命令完成安装：
 
 ```
-pip install fastHan==1.4
+pip install fastHan==1.5
 ```
 
 ## 使用教程
@@ -40,6 +44,12 @@ model=FastHan()
 ```
 model=FastHan(model_type="large")
 ```
+
+此外，对于手动下载模型的用户，可以使用模型路径加载模型。下载压缩包并解压后，可将对应路径通过url参数传入。一则使用模型路径加载模型的例子如下：
+```
+model=FastHan(url="C:/Users/gzc/.fastNLP/fasthan/fasthan_base")
+```
+
 #### 输入句子
 模型对句子进行依存分析、命名实体识别的简单例子如下：
 
@@ -87,13 +97,15 @@ print(model(sentence,'CWS'))
 
 输入模型的可以是单独的字符串，也可是由字符串组成的列表。如果输入的是列表，模型将一次性处理所有输入的字符串，所以请自行控制 batch size。
 
-模型的输出是在fastHan模块中定义的sentence与token类。模型将输出一个由sentence组成的列表，而每个sentence又由token组成。每个token本身代表一个被分好的词，有pos、head、head_label、ner四项属性，代表了该词的词性、依存关系、命名实体识别信息。
+模型的输出可以是python的list，也可以是fastHan中自定义的Sentence与Token类。模型默认返回list。
+
+如果将"return_list"参数设为False，模型的输出是在fastHan模块中定义的sentence与token类。模型将输出一个由sentence组成的列表，而每个sentence又由token组成。每个token本身代表一个被分好的词，有pos、head、head_label、ner四项属性，代表了该词的词性、依存关系、命名实体识别信息。
 
 一则输入输出的例子如下所示：
 
 ```
 sentence=["我爱踢足球。","林丹是冠军"]
-answer=model(sentence,'Parsing')
+answer=model(sentence,'Parsing',return_list=False)
 for i,sentence in enumerate(answer):
     print(i)
     for token in sentence:

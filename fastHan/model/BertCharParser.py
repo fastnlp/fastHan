@@ -153,7 +153,8 @@ class CharBiaffineParser(BiaffineParser):
         return arc_nll + label_nll
 
 class BertCharParser(nn.Module):
-    def __init__(self,  vector_size,
+    def __init__(self,  app_index,
+                        vector_size,
                         num_label,
                         rnn_layers=3,
                         arc_mlp_size=500,
@@ -170,6 +171,7 @@ class BertCharParser(nn.Module):
                         label_mlp_size,
                         dropout,
                         use_greedy_infer)
+        self.app_index=app_index
 
     def forward(self, feats, seq_lens, char_heads, char_labels):
         res_dict = self.parser(feats, seq_lens, gold_heads=char_heads)
@@ -183,6 +185,12 @@ class BertCharParser(nn.Module):
         res = self.parser(feats, seq_lens, gold_heads=None)
         output = {}
         output['head_preds'] = res.pop('head_pred')
+
+        size=res['label_pred'].size()
+        res['label_pred']=res['label_pred'].reshape(-1,size[-1])
+        res['label_pred'][:,self.app_index]=-float('inf')
+        res['label_pred']=res['label_pred'].reshape(size)
+
         _, label_pred = res.pop('label_pred').max(2)
         output['label_preds'] = label_pred
         return output

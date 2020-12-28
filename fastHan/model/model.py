@@ -34,6 +34,7 @@ class CharModel(nn.Module):
 
         #parsing
         self.biaffine_parser=BertCharParser(
+                    app_index=self.label_vocab['Parsing'].to_index('APP'),
                     vector_size=768,
                     num_label=len(label_vocab['Parsing']),
                     rnn_layers=Parsing_rnn_layers,

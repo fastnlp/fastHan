@@ -81,16 +81,20 @@ class FastHan(object):
     """
 
 
-    def __init__(self,model_type='base'):
+    def __init__(self,model_type='base',url=None):
         """
         初始化FastHan。包括获取模型参数目录，加载所需的词表、标签集，复制参数等。
         model_type共有base和large两种选择，分别是基于BERT前四层和前八层的模型。
 
         :param str model_type: 取值为'base'或'large'，决定模型的层数为4或8。
+
+        :param str url:默认为None，用户可通过此参数传入手动下载并解压后的目录路径。
         """
         self.device='cpu'
         #获取模型的目录/下载模型
         model_dir=self._get_model(model_type)
+        if url is not None:
+            model_dir=url
 
         #加载所需词表、标签集、模型参数
         self.char_vocab=torch.load(os.path.join(model_dir,'chars_vocab'))
@@ -316,7 +320,7 @@ class FastHan(object):
         chars,seq_len,task_class=self._to_tensor(chars,target,seq_len)
         return chars,seq_len,task_class
     
-    def __call__(self,sentence,target='CWS',use_dict=False):
+    def __call__(self,sentence,target='CWS',use_dict=False, return_list=True):
         '''
         用户调用FastHan的接口函数。
         调用后会反悔Sentence类。
@@ -326,6 +330,8 @@ class FastHan(object):
         :param str target:此次调用所进行的任务，可在'CWS','NER','POS','Parsing'中进行选择。其中'CWS','POS','Parsing'这几项任务的信息属于包含关系，调用更高层的任务可以返回互相兼容的多项任务的结果。
 
         :param bool use_dict:此次分词是否使用用户词典（如若使用，先调用add_user_dict），只有target为'CWS'时，才可令use_dict为True。
+
+        :param bool return_list: 是否以list的形式将结果返回。默认为True，如果设为False，将以Sentence类的形式返回结果。
         '''
         #若输入的是字符串，转为一个元素的list
         if isinstance(sentence,str) and not isinstance(sentence,list):
@@ -404,6 +410,9 @@ class FastHan(object):
 
                 ans.append(self._parsing(head_preds,label_preds,pos_label,sentence[i]))
         
+        if return_list:
+            return ans
+
         #将结果转化为Sentence组成的列表
 
         answer=[]
