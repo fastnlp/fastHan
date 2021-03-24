@@ -1,4 +1,8 @@
 # fastHan
+
+For English README, you can click [here](https://github.com/fastnlp/fastHan/blob/master/README.EN.md)
+
+
 ## 简介
 fastHan是基于[fastNLP](https://github.com/fastnlp/fastNLP)与pytorch实现的中文自然语言处理工具，像spacy一样调用方便。
 
