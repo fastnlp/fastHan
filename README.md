@@ -8,9 +8,8 @@ fastHan是基于[fastNLP](https://github.com/fastnlp/fastNLP)与pytorch实现的
 ## 安装指南
 fastHan需要以下依赖的包：
 
-torch>=1.0.0
-
-fastNLP>=0.5.0
+- torch>=1.0.0
+- fastNLP>=0.5.5
 
 **版本更新:**
 - 1.1版本的fastHan与0.5.5版本的fastNLP会导致importerror。如果使用1.1版本的fastHan，请使用0.5.0版本的fastNLP。
@@ -21,11 +20,14 @@ fastNLP>=0.5.0
   - 修正了Parsing任务中可能会出现的ValueError
   - 修改结果的返回形式，默认以list的形式返回
   - 可以通过url路径加载模型
+- 1.6版本的fastHan
+  - 将用户词典功能扩充到所有任务
+  - 可以在返回值中包含位置信息
 
 可执行如下命令完成安装：
 
 ```
-pip install fastHan==1.5
+pip install fastHan
 ```
 
 ## 使用教程
@@ -54,7 +56,9 @@ model=FastHan(url="C:/Users/gzc/.fastNLP/fasthan/fasthan_base")
 模型对句子进行依存分析、命名实体识别的简单例子如下：
 
 ```
-sentence="郭靖是金庸笔下的一名男主。"
+sentence="郭靖是金庸笔下的男主角。"
+answer=model(sentence)
+print(answer)
 answer=model(sentence,target="Parsing")
 print(answer)
 answer=model(sentence,target="NER")
@@ -63,16 +67,18 @@ print(answer)
 模型将会输出如下信息：
 
 ```
-[[['郭靖', 2, 'top', 'NR'], ['是', 0, 'root', 'VC'], ['金庸', 4, 'nn', 'NR'], ['笔', 5, 'lobj', 'NN'], ['下', 10, 'assmod', 'LC'], ['的', 5, 'assm', 'DEG'], ['一', 8, 'nummod', 'CD'], ['名', 10, 'clf', 'M'], ['男', 10, 'amod', 'JJ'], ['主', 2, 'attr', 'NN'], ['。', 2, 'punct', 'PU']]]
+[['郭靖', '是', '金庸', '笔', '下', '的', '男', '主角', '。']]
+[[['郭靖', 2, 'top', 'NR'], ['是', 0, 'root', 'VC'], ['金庸', 4, 'nn', 'NR'], ['笔', 5, 'lobj', 'NN'], ['下', 8, 'assmod', 'LC'], ['的', 5, 'assm', 'DEG'], ['男', 8, 'amod', 'JJ'], ['主角', 2, 'attr', 'NN'], ['。', 2, 'punct', 'PU']]]
 [[['郭靖', 'NR'], ['金庸', 'NR']]]
 ```
-**任务选择**
+可选参数：
+- **target**: 可在'Parsing'、'CWS'、'POS'、'NER'四个选项中取值，模型将分别进行依存分析、分词、词性标注、命名实体识别任务,模型默认进行CWS任务。
+  - 词性标注任务包含了分词的信息，而依存分析任务又包含了词性标注任务的信息。命名实体识别任务相较其他任务独立。
+  - 模型的POS、Parsing任务均使用CTB标签集。NER使用msra标签集。
+- **use_dict**: 是否使用用户词典，默认为False。
+- **return_list**：是否以list形式传递返回值。默认为True。
+- **return_loc**: 是否将词的位置信息返回，默认为False。可用于spanF metric的评估。
 
-target参数可在'Parsing'、'CWS'、'POS'、'NER'四个选项中取值，模型将分别进行依存分析、分词、词性标注、命名实体识别任务,模型默认进行CWS任务。其中词性标注任务包含了分词的信息，而依存分析任务又包含了词性标注任务的信息。命名实体识别任务相较其他任务独立。
-
-如果分别运行CWS、POS、Parsing任务，模型输出的分词结果等可能存在冲突。如果想获得不冲突的各类信息，请直接运行包含全部所需信息的那项任务。
-
-模型的POS、Parsing任务均使用CTB标签集。NER使用msra标签集。
 
 **分词风格**
 
@@ -99,7 +105,7 @@ print(model(sentence,'CWS'))
 
 模型的输出可以是python的list，也可以是fastHan中自定义的Sentence与Token类。模型默认返回list。
 
-如果将"return_list"参数设为False，模型的输出是在fastHan模块中定义的sentence与token类。模型将输出一个由sentence组成的列表，而每个sentence又由token组成。每个token本身代表一个被分好的词，有pos、head、head_label、ner四项属性，代表了该词的词性、依存关系、命名实体识别信息。
+如果将"return_list"参数设为False，模型将输出一个由sentence组成的列表，而每个sentence又由token组成。每个token本身代表一个被分好的词，有pos、head、head_label、ner、loc属性，代表了该词的词性、依存关系、命名实体识别信息、起始位置。
 
 一则输入输出的例子如下所示：
 
@@ -145,7 +151,7 @@ model.set_device('cpu')
 
 用户可使用 set_user_dict_weight 函数设置权重系数（若不设置，默认为0.05）。我们在大规模的训练语料库中发现0.05-0.1即可取得较好的结果。条件允许的情况下，用户也可以自行设置验证集、测试集，找到最适合自己任务的权重系数。
 
-添加完用户词典后，需要在调用模型时令 use_dict 参数为True。再次申明，词典功能目前仅在'CWS'任务中有效。
+添加完用户词典后，需要在调用模型时令 use_dict 参数为True。
 
 用户可调用 remove_user_dict 移除之前添加的用户词典。
 
@@ -154,7 +160,6 @@ model.set_device('cpu')
 sentence="奥利奥利奥"
 print(model(sentence))
 model.add_user_dict(["奥利","奥利奥"])
-model.set_user_dict_weight(0.05)
 print(model(sentence,use_dict=True))
 ```
 输出为：
@@ -163,6 +168,16 @@ print(model(sentence,use_dict=True))
 [['奥利', '奥利奥']]
 ```
 ## 模型表现
+
+### 泛化能力测试
+对于NLP工具包来说，最重要的就是泛化能力，即在未知数据集里的表现。我们选取了样本较为复杂的Weibo数据集。我们在Weibo的dev集进行了分词测试，并与jieba、THULAC、LTP4.0、SnowNLP进行了对比，对比结果如下（spanF metric）。
+
+ 数据集 | SnowNLP | jieba | THULAC | LTP4.0 base | fastHan large
+--- | --- | --- | --- | --- | ---
+Weibo |0.7999|0.8319 |0.8649|0.9182|0.9314
+
+fastHan的准确率相较于SnowNLP、jieba、THULAC有较大提升。相较于LTP 4.0-base，fastHan的准确率更高，且模型更小（262MB：492MB）。
+
 
 ### 准确率测试
 模型在以下数据集进行训练和准确性测试：
@@ -180,7 +195,7 @@ print(model(sentence,use_dict=True))
 
 任务 | CWS | Parsing | POS | NER MSRA | NER OntoNotes | 速度(句/s),cpu|速度(句/s)，gpu
 ---|---|--- |--- |--- |--- |---|---
-SOTA模型 | 97.1 | 85.66,81.71 | 93.15 | 95.25 | 79.92 |——|——
+SOTA模型 | 97.1 | 85.66,81.71 | 93.15 | 96.09 | 81.82 |——|——
 base模型 | 97.27 | 81.22,76.71 | 94.88 | 94.33 | 82.86 |25-55|22-111
 large模型 | 97.41 | 85.52,81.38 | 95.66 | 95.50 | 83.82|14-28|21-97
 
@@ -191,8 +206,5 @@ large模型 | 97.41 | 85.52,81.38 | 95.66 | 95.50 | 83.82|14-28|21-97
 1. Huang W, Cheng X, Chen K, et al. Toward Fast and Accurate Neural Chinese Word Segmentation with Multi-Criteria Learning.[J]. arXiv: Computation and Language, 2019.
 2. Hang Yan, Xipeng Qiu, and Xuanjing Huang. "A Graph-based Model for Joint Chinese Word Segmentation and Dependency Parsing." Transactions of the Association for Computational Linguistics 8 (2020): 78-92.
 3. Meng Y, Wu W, Wang F, et al. Glyce: Glyph-vectors for Chinese Character Representations[J]. arXiv: Computation and Language, 2019.
-4. Diao S, Bai J, Song Y, et al. ZEN: Pre-training Chinese Text Encoder Enhanced by N-gram Representations[J]. arXiv: Computation and Language, 2019.
-5. Jie Z, Lu W. Dependency-Guided LSTM-CRF for Named Entity Recognition[C]. international joint conference on natural language processing, 2019: 3860-3870.
+4. Xiaonan  Li,  Hang  Yan,  Xipeng  Qiu,  and  XuanjingHuang. 2020. FLAT: Chinese NER using flat-latticetransformer.InProceedings of the 58th AnnualMeeting of the Association for Computational Lin-guistics, pages 6836–6842, Online. Association forComputational Linguisti
 
-
-关于更多模型结构和训练的内容，可以查看此篇[论文](https://arxiv.org/pdf/2009.08633)。

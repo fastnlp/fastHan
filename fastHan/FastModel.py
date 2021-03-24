@@ -60,8 +60,8 @@ class Sentence(object):
                 token=Token(word=word,pos=pos,loc=loc)
                 self.tokens.append(token)
         else:
-            for word,head,head_label,pos,loc in answer_list:
-                token=Token(word=word,pos=pos,head=head,head_label=head_label,loc=loc)
+            for word,head,head_label,pos in answer_list:
+                token=Token(word=word,pos=pos,head=head,head_label=head_label)
                 self.tokens.append(token)
     
     def __repr__(self):
@@ -372,6 +372,10 @@ class FastHan(object):
         
         else:
             raise ValueError("model can only parse string or list of string.")
+
+        if return_list is False and return_loc is False:
+            return_loc=True
+            print("return_list is False, return_loc is set to True")
 
         #去掉句子头尾空格
         for i,s in enumerate(sentence):
