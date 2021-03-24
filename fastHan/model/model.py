@@ -206,8 +206,12 @@ class CharModel(nn.Module):
             return {'loss':loss}
 
             
-
-
+    def __get_ud_diff(self,task,feats,tag_seqs):
+        diff=torch.max(feats,dim=2)[0]-torch.mean(feats,dim=2)
+        diff=diff.unsqueeze(dim=-1)
+        diff=diff.expand(-1,-1,len(self.label_vocab[task]))
+        diff=tag_seqs*diff*self.user_dict_weight
+        return diff
 
     def predict(self, chars,seq_len,task_class,tag_seqs=None):
         task=task_class[0]
@@ -220,6 +224,9 @@ class CharModel(nn.Module):
                 sample[0]=self.pos_idx
             pos_feats=self.embed(chars,self.layers_map['POS'])
             pos_feats=self.pos_mlp(pos_feats)
+            if tag_seqs is not None:
+                diff=self.__get_ud_diff('POS',feats,tag_seqs)
+                pos_feats=pos_feats+diff
             logits = F.log_softmax(pos_feats, dim=-1)
             paths, _ = self.pos_crf.viterbi_decode(logits, mask)
             #paths=pos_feats.max(dim=-1)[1]
@@ -237,10 +244,7 @@ class CharModel(nn.Module):
         if task=='CWS':
             feats=self.cws_mlp(feats)
             if tag_seqs is not None:
-                diff=torch.max(feats,dim=2)[0]-torch.mean(feats,dim=2)
-                diff=diff.unsqueeze(dim=-1)
-                diff=diff.expand(-1,-1,len(self.label_vocab['CWS']))
-                diff=tag_seqs*diff*self.user_dict_weight
+                diff=self.__get_ud_diff(task,feats,tag_seqs)
                 feats=feats+diff
             logits = F.log_softmax(feats, dim=-1)
             paths, _ = self.cws_crf.viterbi_decode(logits, mask)
@@ -249,6 +253,9 @@ class CharModel(nn.Module):
 
         if task=='POS':
             feats=self.pos_mlp(feats)
+            if tag_seqs is not None:
+                diff=self.__get_ud_diff(task,feats,tag_seqs)
+                feats=feats+diff
             logits = F.log_softmax(feats, dim=-1)
             paths, _ = self.pos_crf.viterbi_decode(logits, mask)
             #paths=feats.max(dim=-1)[1]
@@ -258,6 +265,9 @@ class CharModel(nn.Module):
 
         if task=='NER':
             feats=F.relu(self.ner_linear(feats))
+            if tag_seqs is not None:
+                diff=self.__get_ud_diff(task,feats,tag_seqs)
+                feats=feats+diff
             logits = F.log_softmax(feats, dim=-1)
             paths, _ = self.ner_crf.viterbi_decode(logits, mask)
             return {'pred': paths}

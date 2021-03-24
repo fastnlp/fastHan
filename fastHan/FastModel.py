@@ -18,7 +18,7 @@ class Token(object):
     head_label属性代表依存弧的标签；ner属性代表该词实体属性
     """
 
-    def __init__(self,word,pos=None,head=None,head_label=None,ner=None):
+    def __init__(self,word,pos=None,head=None,head_label=None,ner=None,loc=None):
         self.word=word
         self.pos=pos
         #head代表依存弧的指向，root为0；原句中的词，序号从1开始。
@@ -26,6 +26,7 @@ class Token(object):
         #head_label代表依存弧的标签。
         self.head_label=head_label
         self.ner=ner
+        self.loc=loc
     
     def __repr__(self):
         return self.word
@@ -47,20 +48,20 @@ class Sentence(object):
         self.answer_list=answer_list
         self.tokens=[]
         if target=='CWS':
-            for word in answer_list:
-                token=Token(word)
+            for word,loc in answer_list:
+                token=Token(word,loc=loc)
                 self.tokens.append(token)
         elif target=='NER':
-            for word,ner in answer_list:
-                token=Token(word=word,ner=ner)
+            for word,ner,loc in answer_list:
+                token=Token(word=word,ner=ner,loc=loc)
                 self.tokens.append(token)
         elif target=='POS':
-            for word,pos in answer_list:
-                token=Token(word=word,pos=pos)
+            for word,pos,loc in answer_list:
+                token=Token(word=word,pos=pos,loc=loc)
                 self.tokens.append(token)
         else:
-            for word,head,head_label,pos in answer_list:
-                token=Token(word=word,pos=pos,head=head,head_label=head_label)
+            for word,head,head_label,pos,loc in answer_list:
+                token=Token(word=word,pos=pos,head=head,head_label=head_label,loc=loc)
                 self.tokens.append(token)
     
     def __repr__(self):
@@ -233,11 +234,10 @@ class FastHan(object):
         return ans
         
     
-    def _get_list(self,chars,tags):
+    def _get_list(self,chars,tags,return_loc=False):
 
         # 对使用BMES\BMESO标签集及交叉标签集的标签序列，输入原始字符串、标签集，转化为\
         # 分好词的Token序列，以及每个Token的属性。
-
         result=[]
         word=''
         for i in range(len(tags)):
@@ -246,17 +246,31 @@ class FastHan(object):
             if tag1=='B':
                 word=''
                 word+=chars[i]
+                loc=i
             elif tag1=='S':
                 if tag2=='':
-                    result.append(chars[i])
+                    if return_loc:
+                        result.append([chars[i],i])
+                    else:
+                        result.append(chars[i])
                 else:
-                    result.append((chars[i],tag2))
+                    if return_loc:
+                        result.append([chars[i],tag2,i])
+                    else:
+                        result.append([chars[i],tag2])
+                    
             elif tag1=='E':
                 word+=chars[i]
                 if tag2=='':
-                    result.append(word)
+                    if return_loc:
+                        result.append([word,loc])
+                    else:
+                        result.append(word)
                 else:
-                    result.append([word,tag2])
+                    if return_loc:
+                        result.append([word,tag2,loc])
+                    else:
+                        result.append([word,tag2])
             else:
                 word+=chars[i]
         
@@ -299,6 +313,20 @@ class FastHan(object):
             res.append([words[i],head,label_preds[lengths[i]-1],pos_label[lengths[i]-1].split('-')[1]])
         return res
     
+    
+    #与用户词典相关。根据当前的任务，返回词典中B\M\E\S打头的tag索引
+    def __get_tag_dict(self,task):
+        important_tags=['B','M','E','S']
+        result={}
+        for tag in important_tags:
+            result[tag]={}
+        for tag in self.label_vocab[task].word2idx:
+            if tag in important_tags:
+                result[tag][tag]=self.label_vocab[task].word2idx[tag]
+            elif '-' in tag and tag.split('-')[0] in important_tags:
+                result[tag.split('-')[0]][tag]=self.label_vocab[task].word2idx[tag]
+        return result
+    
     def __preprocess_sentence(self,sentence,target):
 
         # 对原始的输入字符串、字符串列表做处理，转换为padding好的向量序列。
@@ -320,7 +348,7 @@ class FastHan(object):
         chars,seq_len,task_class=self._to_tensor(chars,target,seq_len)
         return chars,seq_len,task_class
     
-    def __call__(self,sentence,target='CWS',use_dict=False, return_list=True):
+    def __call__(self,sentence,target='CWS',use_dict=False, return_list=True,return_loc=False):
         '''
         用户调用FastHan的接口函数。
         调用后会反悔Sentence类。
@@ -344,9 +372,6 @@ class FastHan(object):
         
         else:
             raise ValueError("model can only parse string or list of string.")
-            
-        if use_dict is True and target!='CWS':
-            raise ValueError("Model can only use dict in CWS mode.")
 
         #去掉句子头尾空格
         for i,s in enumerate(sentence):
@@ -356,7 +381,11 @@ class FastHan(object):
             raise ValueError("target can only be CWS, POS, NER or Parsing.")
         
         #对输入字符串列表做处理，转换为padding好的向量序列。
-        if target=='CWS' and use_dict is True:
+        if use_dict is True:
+            if target=='Parsing':
+                task='POS'
+            else:
+                task=target
             tag_seqs=[]
             for s in sentence:
                 _,tag_seq=self.user_dict(s)
@@ -364,15 +393,18 @@ class FastHan(object):
                 tag_seqs.append(tag_seq)
             max_len=max(map(len,tag_seqs))
             #t_代表tensor形式
-            t_tag_seqs=torch.zeros([len(tag_seqs),max_len,len(self.label_vocab['CWS'].word2idx)])
+            t_tag_seqs=torch.zeros([len(tag_seqs),max_len,len(self.label_vocab[task].word2idx)])
             important_tags=['B','M','E','S']
+            tag_dict=self.__get_tag_dict(task)
             for i in range(len(tag_seqs)):
                 for j in range(len(tag_seqs[i])):
                     if tag_seqs[i][j] in important_tags:
-                        tag=self.label_vocab['CWS'].to_index(tag_seqs[i][j])
-                        t_tag_seqs[i][j][tag]=1
+                        for tag in tag_dict[tag_seqs[i][j]].values():
+                            t_tag_seqs[i][j][tag]=1
+                        
+                        #tag=self.label_vocab['CWS'].to_index(tag_seqs[i][j])
+                        
             t_tag_seqs=t_tag_seqs.to(self.device)
-
             
         else:
             tag_seqs=None
@@ -392,12 +424,12 @@ class FastHan(object):
             ans=[]
             for i in range(chars.size()[0]):
                 tags=self._to_label(res[i][:seq_len[i]],target)
-                ans.append(self._get_list(sentence[i],tags))
+                ans.append(self._get_list(sentence[i],tags,return_loc=return_loc))
         else:
             #对依存分析进行如下处理
 
             #输入模型
-            res=self.model.predict(chars,seq_len,task_class)
+            res=self.model.predict(chars,seq_len,task_class,t_tag_seqs)
 
             #逐句进行解析
             ans=[]
@@ -414,7 +446,6 @@ class FastHan(object):
             return ans
 
         #将结果转化为Sentence组成的列表
-
         answer=[]
         for ans_ in ans:
             answer.append(Sentence(ans_,target))
