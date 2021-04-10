@@ -51,9 +51,9 @@ model=FastHan()
 model=FastHan(model_type="large")
 ```
 
-此外，对于手动下载模型的用户，可以使用模型路径加载模型。下载压缩包并解压后，可将对应路径通过url参数传入。一则使用模型路径加载模型的例子如下：
+此外，对于手动下载模型的用户，可以使用模型路径加载模型。下载压缩包并解压后，可将对应路径通过url参数传入。注意，此处也要根据使用的模型传入正确的model_type参数。一则使用模型路径加载模型的例子如下：
 ```
-model=FastHan(url="C:/Users/gzc/.fastNLP/fasthan/fasthan_base")
+model=FastHan(model_type='large',url="C:/Users/gzc/.fastNLP/fasthan/fasthan_large")
 ```
 
 #### 输入句子

@@ -93,9 +93,11 @@ class FastHan(object):
         """
         self.device='cpu'
         #获取模型的目录/下载模型
-        model_dir=self._get_model(model_type)
         if url is not None:
             model_dir=url
+        else:
+            model_dir=self._get_model(model_type)
+        
 
         #加载所需词表、标签集、模型参数
         self.char_vocab=torch.load(os.path.join(model_dir,'chars_vocab'))

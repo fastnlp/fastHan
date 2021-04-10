@@ -39,7 +39,7 @@ model=FastHan(model_type="large")
 ```
 Besides, for users download parameters manually, load the model by path is also allowed. e.g.:
 ```
-model=FastHan(url="C:/Users/gzc/.fastNLP/fasthan/fasthan_base")
+model=FastHan(model_type='large',url="C:/Users/gzc/.fastNLP/fasthan/fasthan_large")
 ```
 
 #### Call the model
