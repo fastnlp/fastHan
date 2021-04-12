@@ -1,12 +1,17 @@
 import os
 import re
+from shutil import copyfile
 
 import torch
-from fastNLP import Vocabulary
+from fastNLP import Trainer, Vocabulary
+from fastNLP.core.optimizer import AdamW
 from fastNLP.io.file_utils import cached_path
 
-from .model.model import CharModel
 from .model.bert import BertEmbedding
+from .model.finetune_dataloader import (fastHan_CWS_Loader, fastHan_NER_Loader,
+                                        fastHan_Parsing_Loader,
+                                        fastHan_POS_loader)
+from .model.model import CharModel
 from .model.UserDict import UserDict
 
 
@@ -102,6 +107,7 @@ class FastHan(object):
         #加载所需词表、标签集、模型参数
         self.char_vocab=torch.load(os.path.join(model_dir,'chars_vocab'))
         self.label_vocab=torch.load(os.path.join(model_dir,'label_vocab'))
+        self.model_dir=model_dir
         model_path=os.path.join(model_dir,'model.bin')
         model_state_dict=torch.load(model_path,map_location='cpu')
 
@@ -135,6 +141,100 @@ class FastHan(object):
         'CWS-zx': '[unused11]',
         }
         
+    def finetune(self,data_path=None,task=None,lr=1e-5,n_epochs=1,batch_size=8,save=False,save_url=None):
+        '''
+        令fastHan继续在某项任务上进行微调。用户传入用于微调的数据集文件并设置超参数，fastHan自动加载并完成微调。此外，用户\
+        可在微调后保存模型参数，并在初始化时通过url加载之前微调过的模型。进行微调的设备为当前fastHan的device。
+
+        数据集文件的格式要求如下所示。
+        对于CWS任务，则要求每行一条数据，每个词用空格分隔开。
+
+        Example::
+
+            上海 浦东 开发 与 法制 建设 同步
+            新华社 上海 二月 十日 电 （ 记者 谢金虎 、 张持坚 ）
+            ...
+
+        对于NER任务，要求按照MSRA数据集的格式与标签集。
+        Example::
+
+            札 B-NS
+            幌 E-NS
+            雪 O
+            国 O
+            庙 O
+            会 O
+            。 O
+
+            主 O
+            道 O
+            上 O
+            的 O
+            雪 O
+
+            ...
+        
+        对于POS和dependency parsing，要求按照CTB9的格式与标签集。
+        Example::
+
+            1       印度    _       NR      NR      _       3       nn      _       _
+            2       海军    _       NN      NN      _       3       nn      _       _
+            3       参谋长  _       NN      NN      _       5       nsubjpass       _       _
+            4       被      _       SB      SB      _       5       pass    _       _
+            5       解职    _       VV      VV      _       0       root    _       _
+
+            1       新华社  _       NR      NR      _       7       dep     _       _
+            2       新德里  _       NR      NR      _       7       dep     _       _
+            3       １２月  _       NT      NT      _       7       dep     _       _
+            ...
+        
+        :param str data_path: 用于微调的数据集文件的路径
+        :param str task: 此次微调的任务，可选值'CWS','POS','Parsing','NER'
+        :param float lr: 微调的学习率。默认取1e-5
+        :param int n_epochs: 微调的迭代次数，默认取1
+        :param int batch_size: 每个batch的数据数量，默认为8。
+        :param bool save: 是否保存微调后的模型，默认为False
+        :param str save_url: 若保存模型，则此值为保存模型的路径
+        '''
+        assert(data_path and task)
+        assert(task in ['CWS','POS','Parsing','NER'])
+        if save:
+            assert(save_url)
+        if task=='CWS':
+            dataset=fastHan_CWS_Loader(data_path, self.char_vocab, self.label_vocab['CWS'])
+        elif task=='POS':
+            dataset=fastHan_POS_loader(data_path,self.char_vocab,self.label_vocab['POS'])
+        elif task=='NER':
+            dataset=fastHan_NER_Loader(data_path,self.char_vocab,self.label_vocab['NER'])
+        else:
+            dataset=fastHan_Parsing_Loader(data_path,self.char_vocab,self.label_vocab)
+
+        no_decay = ['bias', 'LayerNorm.weight']
+        optimizer_grouped_parameters = [
+            {'params': [p for n, p in self.model.named_parameters() if not any(nd in n for nd in no_decay)], 'weight_decay': 0.01},
+            {'params': [p for n, p in self.model.named_parameters() if any(nd in n for nd in no_decay)], 'weight_decay': 0.0}
+        ]
+        optimizer = AdamW(optimizer_grouped_parameters, lr=lr)
+
+        trainer=Trainer(train_data=dataset, model=self.model, optimizer=optimizer,
+                  device=self.device, batch_size=batch_size,
+                  loss=None, n_epochs=n_epochs,check_code_level=-1,
+                  update_every=1)
+        trainer.train()
+        self.model.eval()
+
+        if save:
+            if not os.path.exists(save_url):
+                os.mkdir(save_url)
+            print('saving model')
+            copyfile(os.path.join(self.model_dir,'vocab.txt'),os.path.join(save_url,'vocab.txt'))
+            copyfile(os.path.join(self.model_dir,'bert_config.json'),os.path.join(save_url,'bert_config.json'))
+            copyfile(os.path.join(self.model_dir,'chars_vocab'),os.path.join(save_url,'chars_vocab'))
+            copyfile(os.path.join(self.model_dir,'label_vocab'),os.path.join(save_url,'label_vocab'))
+            torch.save(self.model.state_dict(),os.path.join(save_url,'model.bin'))
+
+        return
+
     def add_user_dict(self,dic):
         '''
         为分词（CWS）任务添加用户词典。用户词典会在模型解码时根据词典改变标签序列的权重，令模型偏好根据用户词典进行解码。
@@ -150,7 +250,6 @@ class FastHan(object):
         else:
             raise ValueError("model can only parse string or list of string.")
 
-
     def remove_user_dict(self):
         '''
         移除当前的用户词典。
@@ -159,7 +258,7 @@ class FastHan(object):
 
     def set_device(self,device):
         """
-        调整模型至device。
+        调整模型至device。目前不支持多卡计算。
 
         :param str,torch.device,int device:支持以下的输入:
     
@@ -201,9 +300,7 @@ class FastHan(object):
         
         model_dir=cached_path(url,name='fasthan')
         return model_dir
-    
-    
-        
+            
     def _to_tensor(self,chars,target,seq_len):
 
         # 将向量序列、序列长度转换为pytorch中的tensor，从而输入CharModel。
@@ -213,8 +310,7 @@ class FastHan(object):
         chars=torch.tensor(chars).to(self.device)
         seq_len=torch.tensor(seq_len).to(self.device)
         return chars,seq_len,task_class
-        
-    
+           
     def _to_label(self,res,target):
 
         # 将一个向量序列转化为标签序列。
@@ -235,7 +331,6 @@ class FastHan(object):
             ans.append(vocab.to_word(int(label)))
         return ans
         
-    
     def _get_list(self,chars,tags,return_loc=False):
 
         # 对使用BMES\BMESO标签集及交叉标签集的标签序列，输入原始字符串、标签集，转化为\
@@ -288,8 +383,7 @@ class FastHan(object):
         assert(isinstance(weight,float) or isinstance(weight,int))
         self.model.user_dict_weight=weight
         return 0
-    
-    
+       
     def _parsing(self,head_preds,label_preds,pos_label,chars):
 
         # 解析模型在依存分析的输出。
@@ -314,7 +408,6 @@ class FastHan(object):
             head=lengths.index(head)
             res.append([words[i],head,label_preds[lengths[i]-1],pos_label[lengths[i]-1].split('-')[1]])
         return res
-    
     
     #与用户词典相关。根据当前的任务，返回词典中B\M\E\S打头的tag索引
     def __get_tag_dict(self,task):
