@@ -17,11 +17,12 @@ You can execute the following command to complete the installation：
 pip install fastHan
 ```
 
-## User Tutorial
+## **Quick Start**
 
 It is quite simple to use FastHan. There are two steps: load the model, call the model.
 
-#### Load the model
+**Load the model**
+
 Execute the following code to load the model:
 
 ```
@@ -42,7 +43,8 @@ Besides, for users download parameters manually, load the model by path is also 
 model=FastHan(model_type='large',url="C:/Users/gzc/.fastNLP/fasthan/fasthan_large")
 ```
 
-#### Call the model
+**Call the model**
+
 An example of calling the model is shown below:
 
 ```
@@ -66,8 +68,106 @@ arg list：
   - fastHan uses CTB label set for POS\Parsing, uses MSRA label set for NER
 - **use_dict**: whether to use user lexicon，default by False.
 - **return_list**：whether to return as list, default by True.
-- **return_loc**: whether to return the start position of words, deault by False. It can be used in spanF metric。
+- **return_loc**: whether to return the start position of words, deault by False. It can be used in spanF metric
 
+**Change device**
+
+Users can use **set_device** function to change the device of model:
+
+```
+model.set_device('cuda:0')
+model.set_device('cpu')
+```
+
+## **Advanced Features**
+
+**Fituning**
+
+Users can finetune fastHan on their own dataset. An example of finetuning fastHan is shown as follows:
+```
+from fastHan import FastHan
+
+model=FastHan('large')
+
+# traindata file path
+cws_url='train.dat'
+
+model.set_device(0)
+model.finetune(data_path=cws_url,task='CWS',save=True,save_url='finetuned_model')
+```
+By calling set_device, the finetuning proceed can be accelarated using GPU. When fine-tuning, the data used for training needs to be formatted into a file.
+
+For CWS, ene line corresponds to one piece of data, and each word is separated by a space.
+
+Example:
+ 
+    上海 浦东 开发 与 法制 建设 同步
+    新华社 上海 二月 十日 电 （ 记者 谢金虎 、 张持坚 ）
+    ...
+
+For NER, we use the format and label set same as MSRA dataset. 
+
+Example:
+
+    札 B-NS
+    幌 E-NS
+    雪 O
+    国 O
+    庙 O
+    会 O
+    。 O
+
+    主 O
+    道 O
+    上 O
+    的 O
+    雪 O
+
+    ...
+
+
+For POS and dependency parsing, we use the format and label set same as CTB9 dataset. 
+
+Example:
+
+    1       印度    _       NR      NR      _       3       nn      _       _
+    2       海军    _       NN      NN      _       3       nn      _       _
+    3       参谋长  _       NN      NN      _       5       nsubjpass       _       _
+    4       被      _       SB      SB      _       5       pass    _       _
+    5       解职    _       VV      VV      _       0       root    _       _
+
+    1       新华社  _       NR      NR      _       7       dep     _       _
+    2       新德里  _       NR      NR      _       7       dep     _       _
+    3       １２月  _       NT      NT      _       7       dep     _       _
+    ...
+
+arg list:
+- **data_path**:str，the path of the file containing training data.
+- **task**：str，the task to be finetuned，can be set from 'CWS','POS','Parsing','NER'.
+- **lr**：float，learning rate, 1e-5 by default.
+- **n_epochs**：int, umber of finetuning epochs, 1 by default.
+- **batch_size**:int, batch size, 8 by default.
+- **save**:bool, whether to save the model after finetunine, False by default.
+- **save_url**:str, the path to save the model, None by default.
+
+**User lexicon**
+
+Users can use **add_user_dict** to add their own lexicon, which will affect the weight put into CRF. The arg of this function can be list consist of words, or the path of lexicon file. (In the file,words are split by '\n').
+
+Users can use **set_user_dict_weight** to set the weight coefficient of user lexicon, which is default by 0.05. Users can optimize the value by construct dev set.
+
+Users can use **remove_user_dict** to remove the lexicon added before.
+```
+sentence="奥利奥利奥"
+print(model(sentence))
+model.add_user_dict(["奥利","奥利奥"])
+print(model(sentence,use_dict=True))
+```
+The output will be:
+```
+[['奥利奥利奥']]
+[['奥利', '奥利奥']]
+```
 
 **segmentation style**
 
@@ -123,34 +223,8 @@ the output will be:
 ！ PU 2 punct
 ```
 
-**change device**
 
-Users can use **set_device** function to change the device of model:
-
-```
-model.set_device('cuda:0')
-model.set_device('cpu')
-```
-
-**User lexicon**
-
-Users can use **add_user_dict** to add their own lexicon, which will affect the weight put into CRF. The arg of this function can be list consist of words, or the path of lexicon file. (In the file,words are split by '\n').
-
-Users can use **set_user_dict_weight** to set the weight coefficient of user lexicon, which is default by 0.05. Users can optimize the value by construct dev set.
-
-Users can use **remove_user_dict** to remove the lexicon added before.
-```
-sentence="奥利奥利奥"
-print(model(sentence))
-model.add_user_dict(["奥利","奥利奥"])
-print(model(sentence,use_dict=True))
-```
-The output will be:
-```
-[['奥利奥利奥']]
-[['奥利', '奥利奥']]
-```
-## Performance
+## **Performance**
 
 ### Generalization test
 Generalization is the most important attribute for a NLP toolkit. We conducted a CWS test on the dev set of the Weibo dataset, and compared fastHan with jieba, THULAC, LTP4.0, SnowNLP. The results are as follows (spanF metric):
@@ -175,7 +249,7 @@ We also perform speed test with Intel Core i5-9400f + NVIDIA GeForce GTX 1660ti,
 Results are as follows:
 
 
-test | CWS | Parsing | POS | NER MSRA | NER OntoNotes | 速度(句/s),cpu|速度(句/s)，gpu
+test | CWS | Parsing | POS | NER MSRA | NER OntoNotes | speed(sent/s),cpu|speed(sent/s)，gpu
 ---|---|--- |--- |--- |--- |---|---
 SOTA | 97.1 | 85.66,81.71 | 93.15 | 96.09 | 81.82 |——|——
 fastHan base | 97.27 | 81.22,76.71 | 94.88 | 94.33 | 82.86 |25-55|22-111
