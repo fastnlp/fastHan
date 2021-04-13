@@ -249,7 +249,7 @@ for i,sentence in enumerate(answer):
 
 **泛化能力测试**
 
-对于NLP工具包来说，最重要的就是泛化能力，即在未知数据集里的表现。我们选取了样本较为复杂的Weibo数据集。我们在Weibo的dev集进行了分词测试，并与jieba、THULAC、LTP4.0、SnowNLP进行了对比，对比结果如下（spanF metric）。
+对于NLP工具包来说，最重要的就是泛化能力，即在未知数据集里的表现。我们选取了样本较为复杂的Weibo数据集。我们在Weibo的dev集和test集进行了分词测试，并与jieba、THULAC、LTP4.0、SnowNLP进行了对比，对比结果如下（spanF metric）。
 
  数据集 | SnowNLP | jieba | THULAC | LTP4.0 base | fastHan large | fastHan large (fine-tuned)
 --- | --- | --- | --- | --- | --- | ---
