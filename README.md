@@ -251,12 +251,13 @@ for i,sentence in enumerate(answer):
 
 对于NLP工具包来说，最重要的就是泛化能力，即在未知数据集里的表现。我们选取了样本较为复杂的Weibo数据集。我们在Weibo的dev集进行了分词测试，并与jieba、THULAC、LTP4.0、SnowNLP进行了对比，对比结果如下（spanF metric）。
 
- 数据集 | SnowNLP | jieba | THULAC | LTP4.0 base | fastHan large
---- | --- | --- | --- | --- | ---
-Weibo |0.7999|0.8319 |0.8649|0.9182|0.9314
+ 数据集 | SnowNLP | jieba | THULAC | LTP4.0 base | fastHan large | fastHan large (fine-tuned)
+--- | --- | --- | --- | --- | --- | ---
+Weibo devset|0.7999|0.8319 |0.8649|0.9182|0.9314 |0.9632
+Weibo testset|0.7965 | 0.8358 | 0.8665 | 0. 9205 | 0.9338 | 0.9664
 
-fastHan的准确率相较于SnowNLP、jieba、THULAC有较大提升。相较于LTP 4.0-base，fastHan的准确率更高，且模型更小（262MB：492MB）。
-
+作为可以现成使用的工具，fastHan的准确率相较于SnowNLP、jieba、THULAC有较大提升。相较于LTP 4.0-base，fastHan的准确率更高，且模型更小（262MB：492MB）。
+在finetune之后，fastHan的准确率也提升明显。
 
 **准确率测试**
 

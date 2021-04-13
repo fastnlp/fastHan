@@ -230,9 +230,10 @@ the output will be:
 Generalization is the most important attribute for a NLP toolkit. We conducted a CWS test on the dev set of the Weibo dataset, and compared fastHan with jieba, THULAC, LTP4.0, SnowNLP. The results are as follows (spanF metric):
 
 
- dataset | SnowNLP | jieba | THULAC | LTP4.0 base | fastHan large
---- | --- | --- | --- | --- | ---
-Weibo |0.7999|0.8319 |0.8649|0.9182|0.9314
+ dataset | SnowNLP | jieba | THULAC | LTP4.0 base | fastHan large | fastHan large (fine-tuned)
+--- | --- | --- | --- | --- | --- | ---
+Weibo devset|0.7999|0.8319 |0.8649|0.9182|0.9314 |0.9632
+Weibo testset|0.7965 | 0.8358 | 0.8665 | 0. 9205 | 0.9338 | 0.9664
 
 fastHan's performance is much better than SnowNLP, jieba and THULAC. Compared with LTP-4.0, fastHan's model is much smaller(262MB:492MB) and the scores is 1.3 percentage points higher.
 
