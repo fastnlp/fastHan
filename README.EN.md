@@ -17,6 +17,13 @@ You can execute the following command to complete the installation：
 pip install fastHan
 ```
 
+Or you can install fastHan from github：
+```
+git clone git@github.com:fastnlp/fastHan.git
+cd fastHan
+python setup.py install
+```
+
 ## **Quick Start**
 
 It is quite simple to use FastHan. There are two steps: load the model, call the model.

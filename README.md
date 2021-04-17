@@ -36,6 +36,13 @@ fastHan需要以下依赖的包：
 pip install fastHan
 ```
 
+或者可以通过github安装：
+```
+git clone git@github.com:fastnlp/fastHan.git
+cd fastHan
+python setup.py install
+```
+
 ## **快速上手**
 fastHan的使用极为简单，只需两步：加载模型、将句子输入模型。
 
