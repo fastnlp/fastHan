@@ -4,6 +4,16 @@ fastHan is developed based on [fastNLP](https://github.com/fastnlp/fastNLP) and 
 
 The kernel model of FastHan is based on BERT. We trained the kernel model on 13 corpus of CWS, POS, NER and dependency parsing. There are two versions of fastHan: base(4 layers, 150MB) and large(8 layers, 262mb). The large model can achieve SOTA performance on each task. 
 
+## Citation
+If you use the fastHan toolkit in your work, you can cite this [paper](https://arxiv.org/abs/2009.08633):
+```
+@article{geng2020fasthan,
+  title={fastHan: A BERT-based Joint Many-Task Toolkit for Chinese NLP},
+  author={Geng, Zhichao and Yan, Hang and Qiu, Xipeng and Huang, Xuanjing},
+  journal={arXiv preprint arXiv:2009.08633},
+  year={2020}
+}
+```
 
 ## Install
 To install fastHan, the environment has to satisfy requirements below：

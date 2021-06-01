@@ -8,6 +8,18 @@ fastHan是基于[fastNLP](https://github.com/fastnlp/fastNLP)与pytorch实现的
 
 其内核为基于BERT的联合模型，其在13个语料库中进行训练，可处理中文分词、词性标注、依存分析、命名实体识别四项任务。fastHan共有base与large两个版本，分别利用BERT的前四层与前八层。base版本在总参数量150MB的情况下各项任务均有不错表现，large版本则接近甚至超越SOTA模型。
 
+## 引用
+
+如果您在工作中使用了fastHan工具，您可以引用这篇[论文](https://arxiv.org/abs/2009.08633)：
+```
+@article{geng2020fasthan,
+  title={fastHan: A BERT-based Joint Many-Task Toolkit for Chinese NLP},
+  author={Geng, Zhichao and Yan, Hang and Qiu, Xipeng and Huang, Xuanjing},
+  journal={arXiv preprint arXiv:2009.08633},
+  year={2020}
+}
+```
+
 
 ## 安装指南
 fastHan需要以下依赖的包：
