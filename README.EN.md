@@ -6,13 +6,18 @@ The kernel model of FastHan is based on BERT. We trained the kernel model on 13 
 
 ## Citation
 If you use the fastHan toolkit in your work, you can cite this [paper](https://arxiv.org/abs/2009.08633):
+Zhichao Geng, Hang Yan, Xipeng Qiu and Xuanjing Huang, fastHan: A BERT-based Multi-Task Toolkit for Chinese NLP, ACL, 2021.
+
 ```
-@article{geng2020fasthan,
-  title={fastHan: A BERT-based Joint Many-Task Toolkit for Chinese NLP},
-  author={Geng, Zhichao and Yan, Hang and Qiu, Xipeng and Huang, Xuanjing},
-  journal={arXiv preprint arXiv:2009.08633},
-  year={2020}
+@inproceedings{geng-etal-2021-fasthan,
+  author = {Geng, Zhichao and Yan, Hang and Qiu, Xipeng and Huang, Xuanjing},
+  title = {fastHan: A BERT-based Multi-Task Toolkit for Chinese NLP},
+  booktitle = {Proceedings of the 59th Annual Meeting of the Association for Computational Linguistics and the 11th International Joint Conference on Natural Language Processing: System Demonstrations},
+  year = {2021},
+  pages = {99--106}, 
+  url = {https://aclanthology.org/2021.acl-demo.12}
 }
+
 ```
 
 ## Install
