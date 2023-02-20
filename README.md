@@ -10,7 +10,7 @@ fastHan是基于[fastNLP](https://github.com/fastnlp/fastNLP)与pytorch实现的
 
 从fastHan2.0开始，fastHan在原有的基础上，增加了对古汉语分词、古汉语词性标注的处理。此外，fastHan还可以处理中文AMR任务。fastHan在各项任务均有不错表现，在部分数据集上接近甚至超越SOTA模型。
 
-最后，如果您对古汉语分词、词性标注非常感兴趣，您也可以关注实验室另外一个工作[bert-ancient-chinese](https://blog.csdn.net/Ji_Huai/article/details/125209985)（[论文](https://aclanthology.org/2022.lt4hala-1.25/)）。
+**最后，如果您对古汉语分词、词性标注非常感兴趣，您也可以关注实验室另外一个工作[bert-ancient-chinese](https://blog.csdn.net/Ji_Huai/article/details/125209985)（[论文](https://aclanthology.org/2022.lt4hala-1.25/)）。**
 
 ## 引用
 
