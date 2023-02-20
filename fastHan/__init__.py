@@ -1,7 +1,2 @@
-__all__ = [
-    "Token",
-    "Sentence",
-    "FastHan",
-]
-
-from .FastModel import FastHan,Sentence,Token
+from .FastModel import FastHan
+from .FastCamrModel import FastCAMR

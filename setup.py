@@ -14,14 +14,14 @@ print(pkgs)
 
 setup(
     name='fastHan',
-    version='1.7',
+    version='2.0',
     url='https://github.com/fastnlp/fastHan',
     description=(
-        '使用深度学习联合模型，解决中文分词、词性标注、依存分析、命名实体识别任务。'
+        '使用深度学习联合模型，解决中文分词、词性标注、命名实体识别、依存分析任务。'
     ),
     long_description=readme,
     long_description_content_type='text/markdown',
-    author='耿志超',
+    author='王鹏宇',
     license='Apache License',
     python_requires='>=3.6',
     packages=pkgs,
