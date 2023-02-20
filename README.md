@@ -35,8 +35,12 @@ fastHan需要以下依赖的包：
 - torch>=1.8.0
 - fastNLP>=1.0.0
   - 特别注意：**2.0版本以前**的fastHan依赖的fastNLP版本低于1.0.0。
-
 - transformers>=4.0.0
+- **fastHan2.0可能还使用了其他一些常见的包，如果在使用过程中碰见`找不到包`提示，直接使用pip安装即可。**
+  - datasets==2.7.0
+  - pandas==1.5.1
+  - numpy==1.22.2
+
 
 **版本更新:**
 

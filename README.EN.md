@@ -6,7 +6,7 @@ Its core is a Bert-based joint model, which is trained in 15 corpora and can han
 
 Starting from fastHan2.0, fastHan added the processing of ancient Chinese word segmentation and POS tagging on the basis of the original. In addition, fastHan can handle Chinese AMR tasks. fastHan performed well in each of its tasks, approaching or even surpassing the SOTA model on some datasets.
 
-Finally, if you are very interested in ancient Chinese word segmentation and POS tagging, you can also pay attention to another work in the laboratory, [bert-ancient-chinese](https://blog.csdn.net/Ji_Huai/article/details/125209985)([paper](https://aclanthology.org/2022.lt4hala-1.25/)).
+**Finally, if you are very interested in ancient Chinese word segmentation and POS tagging, you can also pay attention to another work in the laboratory, [bert-ancient-chinese](https://blog.csdn.net/Ji_Huai/article/details/125209985)([paper](https://aclanthology.org/2022.lt4hala-1.25/)).**
 
 ## Citation
 If you use the fastHan toolkit in your work, you can cite this [paper](https://arxiv.org/abs/2009.08633):
