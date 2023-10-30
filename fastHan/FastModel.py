@@ -161,7 +161,10 @@ class FastHan(object):
             task_label_map,
             self.all_tasks,
             ensembledWeightManager=self.ensembledWeightManager)
-        self.model.load_state_dict(torch.load(model_path))
+        if torch.cuda.is_available():
+            self.model.load_state_dict(torch.load(model_path))
+        else:
+            self.model.load_state_dict(torch.load(model_path, map_location='cpu'))
         self.model.to(self.device)
         self.model.eval()
         # 加载tokenizer
