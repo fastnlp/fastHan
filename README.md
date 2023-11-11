@@ -25,30 +25,11 @@ Zhichao Geng, Hang Yan, Xipeng Qiu and Xuanjing Huang, fastHan: A BERT-based Mul
 
 
 ## 安装指南
-fastHan需要以下依赖的包：
-
-- torch>=1.0.0
-- fastNLP>=0.5.5
-
-**版本更新:**
-- 1.1版本的fastHan与0.5.5版本的fastNLP会导致importerror。如果使用1.1版本的fastHan，请使用0.5.0版本的fastNLP。
-- 1.2版本的fastHan修复了fastNLP版本兼容问题。小于等于1.2版本的fastHan在输入句子的首尾包含**空格、换行**符时会产生BUG。如果字符串首尾包含上述字符，请使用 strip 函数处理输入字符串。
-- 1.3版本的fastHan自动对输入字符串做 strip 函数处理。
-- 1.4版本的fastHan加入用户词典功能（仅限于分词任务）
-- 1.5版本的fastHan
-  - 修正了Parsing任务中可能会出现的ValueError
-  - 修改结果的返回形式，默认以list的形式返回
-  - 可以通过url路径加载模型
-- 1.6版本的fastHan
-  - 将用户词典功能扩充到所有任务
-  - 可以在返回值中包含位置信息
-- 1.7版本的fastHan
-  - 添加finetune功能
-
 可执行如下命令完成安装：
 
 ```
-pip install fastHan
+pip install -r requirements.txt
+pip install fastHan==1.8
 ```
 
 或者可以通过github安装：
