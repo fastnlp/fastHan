@@ -441,7 +441,7 @@ class FastHan(object):
     def __call__(self,sentence,target='CWS',use_dict=False, return_list=True,return_loc=False):
         '''
         用户调用FastHan的接口函数。
-        调用后会反悔Sentence类。
+        调用后会返回Sentence类。
 
         :param str,list sentence:用于解析的输入，可以是字符串形式的一个句子，也可以是由字符串形式的句子组成的列表。每个句子的长度需要小于等于512。
 
