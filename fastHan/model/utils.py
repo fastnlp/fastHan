@@ -1,6 +1,9 @@
 import os
 
+from pathlib import Path
 from typing import Union, Dict
+from fastNLP.io.file_utils import get_cache_path, unzip_file
+from transformers.utils import cached_file
 
 
 def check_dataloader_paths(paths:Union[str, Dict[str, str]])->Dict[str, str]:
@@ -69,3 +72,20 @@ def get_tokenizer():
     except Exception as e:
         print('use raw tokenizer')
         return lambda x: x.split()
+    
+# 返回本地缓存的模型目录路径
+# 若本地无缓存，从huggingface中下载并解压
+# 修改自 fastNLP.io.file_utils.cached_path, transformers.utils.cached_file
+def hf_cached_path(model_url: str, cache_sub_dir: str):
+    cache_dir = os.path.join(Path(get_cache_path()), cache_sub_dir)
+    os.makedirs(cache_dir, exist_ok=True)
+
+    # model_name 为 fasthan_base 或 fasthan_large
+    model_name = model_url.split("/")[-1]
+    target_path = os.path.join(cache_dir, model_name)
+
+    if model_name not in os.listdir(cache_dir):
+        # 若本地不存在缓存, 从huggingface中下载
+        zipped_file = cached_file(model_url, model_name+".zip")
+        unzip_file(zipped_file, cache_dir)
+    return target_path
