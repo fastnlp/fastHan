@@ -28,7 +28,6 @@ Zhichao Geng, Hang Yan, Xipeng Qiu and Xuanjing Huang, fastHan: A BERT-based Mul
 可执行如下命令完成安装：
 
 ```
-pip install -r requirements.txt
 pip install fastHan==1.8
 ```
 
