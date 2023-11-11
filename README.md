@@ -2,6 +2,8 @@
 
 For English README, you can click [here](https://github.com/fastnlp/fastHan/blob/master/README.EN.md)
 
+**重要：fastHan 2.0的模型仍未寻回权重，请先使用版本号大于等于1.8小于2.0的模型。请将分支切换至1.x并查看README下载。**
+**https://github.com/fastnlp/fastHan/issues/49**
 
 ## 简介
 fastHan是基于[fastNLP](https://github.com/fastnlp/fastNLP)与pytorch实现的中文自然语言处理工具，像spacy一样调用方便。
