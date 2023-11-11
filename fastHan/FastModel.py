@@ -3,9 +3,8 @@ import re
 from shutil import copyfile
 
 import torch
-from fastNLP import Trainer, Vocabulary
+from fastNLP import Trainer
 from fastNLP.core.optimizer import AdamW
-from fastNLP.io.file_utils import cached_path
 
 from .model.bert import BertEmbedding
 from .model.finetune_dataloader import (fastHan_CWS_Loader, fastHan_NER_Loader,
@@ -13,7 +12,7 @@ from .model.finetune_dataloader import (fastHan_CWS_Loader, fastHan_NER_Loader,
                                         fastHan_POS_loader)
 from .model.model import CharModel
 from .model.UserDict import UserDict
-
+from .model.utils import hf_cached_path
 
 class Token(object):
     """
@@ -85,7 +84,11 @@ class FastHan(object):
     FastHan类封装了基于BERT的深度学习联合模型CharModel，可处理CWS、POS、NER、dependency parsing四项任务，这\
     四项任务共享参数。
     """
-
+    HF_URL_MAP = {
+        "base": 'fdugzc/fasthan_base',
+        "large": 'fdugzc/fasthan_large'
+    }
+    CACHE_SUB_DIR = "fasthan"
 
     def __init__(self,model_type='base',url=None):
         """
@@ -96,6 +99,9 @@ class FastHan(object):
 
         :param str url:默认为None，用户可通过此参数传入手动下载并解压后的目录路径。
         """
+        if model_type not in ["base","large"]:
+            raise ValueError("model_type can only be base or large.")
+
         self.device='cpu'
         #获取模型的目录/下载模型
         if url is not None:
@@ -287,19 +293,8 @@ class FastHan(object):
         corpus='CWS-'+corpus
         self.tag_map['CWS']=self.corpus_map[corpus]
 
-    def _get_model(self,model_type):
-        
-        #首先检查本地目录中是否已缓存模型，若没有缓存则下载。
-
-        if model_type=='base':
-            url='http://212.129.155.247/fasthan/fasthan_base.zip'
-        elif model_type=='large':
-            url='http://212.129.155.247/fasthan/fasthan_large.zip'
-        else:
-            raise ValueError("model_type can only be base or large.")
-        
-        model_dir=cached_path(url,name='fasthan')
-        return model_dir
+    def _get_model(self, model_type):
+        return hf_cached_path(FastHan.HF_URL_MAP[model_type], FastHan.CACHE_SUB_DIR)
             
     def _to_tensor(self,chars,target,seq_len):
 
