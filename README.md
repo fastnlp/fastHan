@@ -1,9 +1,8 @@
 # fastHan
 
-For English README, you can click [here](https://github.com/fastnlp/fastHan/blob/master/README.EN.md)
 
-**重要：fastHan 2.0的模型仍未寻回权重，请先使用版本号大于等于1.8小于2.0的模型。请将分支切换至1.x并查看README下载。**
-**https://github.com/fastnlp/fastHan/issues/49**
+**致歉：fastHan的模型因为服务器故障导致参数丢失，暂时停止服务。我们将尽快开始下一版迭代，敬请期待。同时，如果有已经下载或保存参数的朋友，恳请您与我们联系，万分感谢。**
+
 
 ## 简介
 fastHan是基于[fastNLP](https://github.com/fastnlp/fastNLP)与pytorch实现的中文自然语言处理工具，像spacy一样调用方便。
@@ -13,6 +12,8 @@ fastHan是基于[fastNLP](https://github.com/fastnlp/fastNLP)与pytorch实现的
 从fastHan2.0开始，fastHan在原有的基础上，增加了对古汉语分词、古汉语词性标注的处理。此外，fastHan还可以处理中文AMR任务。fastHan在各项任务均有不错表现，在部分数据集上接近甚至超越SOTA模型。
 
 **最后，如果您对古汉语分词、词性标注非常感兴趣，您也可以关注实验室另外一个工作[bert-ancient-chinese](https://blog.csdn.net/Ji_Huai/article/details/125209985)（[论文](https://aclanthology.org/2022.lt4hala-1.25/)）。**
+
+For English README, you can click [here](https://github.com/fastnlp/fastHan/blob/master/README.EN.md)
 
 ## 引用
 
